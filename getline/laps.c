@@ -2,88 +2,55 @@
 #include <stdlib.h>
 #include "laps.h"
 
-// A list to store all cars in race
-car* carlist = NULL;
-size_t carsCount = 0;
+static Car *cars = NULL;  // Dynamic array to hold the cars
+static int car_count = 0; // Number of cars in the race
 
+// Function to manage race state
+void race_state(int *id, size_t size) {
+    for (size_t i = 0; i < size; i++) {
+        int found = 0;
 
-// Function to ro add a new car the list
-void add_car(int car_id)
-{
-	car* newlist = realloc(carlist, (carsCount +1)* sizeof(car));
-	if (!newlist)
-	{
-		perror("Failed to allocate memory");
-		exit(1);
-	}
-	carlist = newlist;
+        // Check if car is already in the race
+        for (int j = 0; j < car_count; j++) {
+            if (cars[j].id == id[i]) {
+                cars[j].lap++; // Increment laps if car is found
+                found = 1;
+                break;
+            }
+        }
 
+        // If car is not found, add it to the race
+        if (!found) {
+            // Reallocate memory to add new car
+            cars = realloc(cars, (car_count + 1) * sizeof(Car));
+            if (cars == NULL) {
+                perror("Unable to allocate memory");
+                exit(EXIT_FAILURE);
+            }
 
-	carlist[carsCount].id = car_id;
-	carlist[carsCount].lap = 0;
-	carsCount++;
+            // Initialize the new car's data
+            cars[car_count].id = id[i];
+            cars[car_count].lap = 0;
+            car_count++;
+            printf("Car %d joined the race\n", id[i]);
+        }
+    }
 
-	printf("Car %d joined the race\n", car_id);
-}
+    // Sort the cars by their id for display purposes
+    for (int i = 0; i < car_count - 1; i++) {
+        for (int j = i + 1; j < car_count; j++) {
+            if (cars[i].id > cars[j].id) {
+                Car temp = cars[i];
+                cars[i] = cars[j];
+                cars[j] = temp;
+            }
+        }
+    }
 
-car *find_car(int car_id)
-{
-	for (size_t i = 0; i < carsCount; i++)
-	{
-		if (carlist[i].id == car_id)
-		{
-			return &carlist[i];
-		}
-	}
-	return (NULL);
-}
-
-void print_car_state()
-{
-	printf("Race state:\n");
-	for (size_t i = 0; i < carsCount; i++)
-	{
-		printf("Car %d [%d laps]\n", carlist[i].id, carlist[i].lap);
-	}
-}
-
-void race_state(int* id, size_t size)
-{
-	if (size == 0)
-	{
-		free(carlist);
-		carlist = NULL;
-		carsCount = 0;
-		return;
-	}
-
-	for (size_t i = 0; i < size; i++)
-	{
-		int car_id = id[i];
-		car* car = find_car(car_id);
-
-		if (car != NULL)
-		{
-			car->lap += 1;
-		}
-		else
-		{
-			add_car(car_id);
-		}
-	}
-
-	for (size_t i = 0; i < carsCount - 1; i++)
-	{
-		for (size_t j = i + 1; j < carsCount; j++)
-		{
-			if (carlist[i].id > carlist[j].id)
-			{
-				car temp = carlist[i];
-				carlist[i] = carlist[j + 1];
-				carlist[j + 1] = temp;
-			}
-		}
-	}
-	
-	print_car_state();
+    // Print the current state of the race
+    printf("Race state:\n");
+    for (int k = 0; k < car_count; k++) {
+        printf("Car %d [%d laps]\n", cars[k].id, cars[k].lap);
+    }
+    printf("--\n");
 }

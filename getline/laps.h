@@ -3,10 +3,10 @@
 
 #include <stddef.h>
 
-typedef struct car {
+typedef struct {
     int id;
     int lap;
-} car;
+} Car;
 
 void race_state(int *id, size_t size);
 
