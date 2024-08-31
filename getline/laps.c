@@ -4,19 +4,19 @@
 
 // A list to store all cars in race
 car* carlist = NULL;
-int carsCount = 0;
+size_t carsCount = 0;
 
 
 // Function to ro add a new car the list
 void add_car(int car_id)
 {
-	carlist = realloc(carlist, (carsCount +1)* sizeof(car));
-	if (carlist == NULL)
+	car *newlist = realloc(carlist, (carsCount +1)* sizeof(car));
+	if (newlist == NULL)
 	{
 		perror("Failed to allocate memory");
 		exit(1);
 	}
-
+	carlist = newlist;
 	carlist[carsCount].id = car_id;
 	carlist[carsCount].lap = 0;
 	carsCount++;
@@ -24,16 +24,26 @@ void add_car(int car_id)
 	printf("Car %d joined the race\n", car_id);
 }
 
-car* find_car(int car_id)
+car *find_car(int car_id)
 {
-	for (int i = 0; i < carsCount; i++)
+	for (size_t i = 0; i < carsCount; i++)
 	{
 		if (carlist[i].id == car_id)
 		{
-			return & carlist[i];
+			return &carlist[i];
 		}
 	}
 	return (NULL);
+}
+
+void print_car_state()
+{
+	printf("Race state:\n");
+	for (size_t i = 0; i < carsCount; i++)
+	{
+		printf("Car %d [%d laps]\n", carlist[i].id, carlist[i].lap);
+	}
+	printf("\n");
 }
 
 void race_state(int* id, size_t size)
@@ -61,9 +71,9 @@ void race_state(int* id, size_t size)
 		}
 	}
 
-	for (int i = 0; i < carsCount; i++)
+	for (size_t i = 0; i < carsCount - 1; i++)
 	{
-		for (int j = i + 1; j < carsCount; j++)
+		for (size_t j = i + 1; j < carsCount; j++)
 		{
 			if (carlist[i].id > carlist[j].id)
 			{
@@ -74,8 +84,5 @@ void race_state(int* id, size_t size)
 		}
 	}
 	
-	for (int i = 0; i < carsCount; i++)
-	{
-		printf("Car %d [%d laps]\n", carlist[i].id, carlist[i].lap);
-	}
+	print_car_state();
 }
