@@ -3,9 +3,9 @@
 
 #include <stddef.h>
 
-typedef struct {
+typedef struct Car {
     int id;
-    int lap;
+    int laps;
 } Car;
 
 void race_state(int *id, size_t size);
