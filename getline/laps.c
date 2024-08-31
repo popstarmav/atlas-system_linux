@@ -10,13 +10,15 @@ size_t carsCount = 0;
 // Function to ro add a new car the list
 void add_car(int car_id)
 {
-	car *newlist = realloc(carlist, (carsCount +1)* sizeof(car));
-	if (newlist == NULL)
+	car* newlist = realloc(carlist, (carsCount +1)* sizeof(car));
+	if (!newlist)
 	{
 		perror("Failed to allocate memory");
 		exit(1);
 	}
 	carlist = newlist;
+
+
 	carlist[carsCount].id = car_id;
 	carlist[carsCount].lap = 0;
 	carsCount++;
@@ -43,7 +45,6 @@ void print_car_state()
 	{
 		printf("Car %d [%d laps]\n", carlist[i].id, carlist[i].lap);
 	}
-	printf("\n");
 }
 
 void race_state(int* id, size_t size)
