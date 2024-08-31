@@ -52,5 +52,4 @@ void race_state(int *id, size_t size) {
     for (int k = 0; k < car_count; k++) {
         printf("Car %d [%d laps]\n", cars[k].id, cars[k].lap);
     }
-    printf("--\n");
 }
