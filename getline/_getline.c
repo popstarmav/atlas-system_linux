@@ -1,7 +1,9 @@
 #include "_getline.h"
+#include <unistd.h>
+#include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
-#include <stdio.h>
+
+#define READ_SIZE 1024
 
 /**
  * _getline - Reads a line from a file descriptor.
@@ -12,65 +14,52 @@
  */
 char *_getline(const int fd)
 {
-    char buffer[READ_SIZE];
+    static char buffer[READ_SIZE];
+    static ssize_t buffer_size = 0;
+    static ssize_t buffer_pos = 0;
     char *line = NULL;
-    size_t total_length = 0;
-    ssize_t bytes_read;
-    char *temp;
+    size_t line_length = 0;
+    ssize_t i;
 
     if (fd < 0)
         return NULL;
 
-    while ((bytes_read = read(fd, buffer, READ_SIZE)) > 0)
-    {
-        for (ssize_t i = 0; i < bytes_read; i++)
-        {
-            if (buffer[i] == '\n')
-            {
-                // End of line found
-                char *newline = malloc(total_length + i + 1);
-                if (!newline)
-                {
-                    free(line);
-                    return NULL;
+    while (1) {
+        if (buffer_pos >= buffer_size) {
+            buffer_size = read(fd, buffer, READ_SIZE);
+            buffer_pos = 0;
+
+            if (buffer_size <= 0) {
+                if (line) {
+                    // If there is any collected line part, return it.
+                    return line;
                 }
-                if (line)
-                {
-                    memcpy(newline, line, total_length);
-                    free(line);
-                }
-                memcpy(newline + total_length, buffer, i);
-                newline[total_length + i] = '\0';
-                return newline;
+                // No more data or read error.
+                return NULL;
             }
         }
 
-        // No newline found, extend line buffer
-        temp = realloc(line, total_length + bytes_read);
-        if (!temp)
-        {
-            free(line);
-            return NULL;
-        }
-        line = temp;
-        memcpy(line + total_length, buffer, bytes_read);
-        total_length += bytes_read;
-    }
+        for (i = buffer_pos; i < buffer_size; i++) {
+            if (buffer[i] == '\n') {
+                line = realloc(line, line_length + (i - buffer_pos) + 1);
+                if (!line)
+                    return NULL;
 
-    // Handle end of file or error
-    if (total_length > 0)
-    {
-        char *newline = malloc(total_length + 1);
-        if (!newline)
-        {
-            free(line);
-            return NULL;
+                memcpy(line + line_length, buffer + buffer_pos, i - buffer_pos);
+                line[line_length + (i - buffer_pos)] = '\0';
+                buffer_pos = i + 1;  // Move past the newline character
+
+                return line;
+            }
         }
-        memcpy(newline, line, total_length);
-        newline[total_length] = '\0';
-        free(line);
-        return newline;
+
+        // No newline found, collect the entire buffer content.
+        line = realloc(line, line_length + (buffer_size - buffer_pos));
+        if (!line)
+            return NULL;
+
+        memcpy(line + line_length, buffer + buffer_pos, buffer_size - buffer_pos);
+        line_length += (buffer_size - buffer_pos);
+        buffer_pos = buffer_size;
     }
-    free(line);
-    return NULL;
 }
