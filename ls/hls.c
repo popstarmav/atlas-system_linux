@@ -7,52 +7,66 @@
 #include <sys/stat.h>
 
 /**
- * list_directory - Lists contents of a directory or file
- * @path: Directory or file path to list
+ * list_directory - Lists contents of a directory
+ * @path: Directory path to list
  * @program_name: Name of the program (argv[0])
  */
 void list_directory(const char *path, const char *program_name)
 {
     struct dirent *entry;
-    DIR *dir;
+    DIR *dir = opendir(path);
+
+    if (dir == NULL)
+    {
+        fprintf(stderr, "%s: cannot access '%s': ", program_name, path);
+        perror("");
+        return;
+    }
+
+    printf("%s:\n", path);
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (entry->d_name[0] != '.')
+        {
+            printf("%s  ", entry->d_name);
+        }
+    }
+    printf("\n");
+    closedir(dir);
+}
+
+/**
+ * list_file - Prints a file's name
+ * @path: File path to print
+ */
+void list_file(const char *path)
+{
+    printf("%s\n", path);
+}
+
+/**
+ * handle_path - Handles files and directories
+ * @path: Path to handle (file or directory)
+ * @program_name: Name of the program (argv[0])
+ */
+void handle_path(const char *path, const char *program_name)
+{
     struct stat path_stat;
 
-    // Use lstat to check if path is a file or directory
     if (lstat(path, &path_stat) == -1)
     {
         fprintf(stderr, "%s: cannot access '%s': ", program_name, path);
         perror("");
-        exit(EXIT_FAILURE);
+        return;
     }
 
-    if (S_ISDIR(path_stat.st_mode)) // Check if it's a directory
+    if (S_ISDIR(path_stat.st_mode))
     {
-        dir = opendir(path);
-        if (dir == NULL)
-        {
-            fprintf(stderr, "%s: cannot open directory '%s': ", program_name, path);
-            perror("");
-            exit(EXIT_FAILURE);
-        }
-
-        // Only print the directory name if there are multiple arguments
-        if (strcmp(path, ".") != 0)
-        {
-            printf("\n");
-        }
-
-        while ((entry = readdir(dir)) != NULL)
-        {
-            if (entry->d_name[0] != '.')  // Skip hidden files
-            {
-                printf("%s\n", entry->d_name);
-            }
-        }
-        closedir(dir);
+        list_directory(path, program_name);
     }
-    else  // If it's a file, print its name
+    else
     {
-        printf("%s\n", path);
+        list_file(path);
     }
 }
 
@@ -67,13 +81,13 @@ int main(int argc, char *argv[])
 {
     if (argc < 2)
     {
-        list_directory(".", argv[0]);  // Default to current directory if no arguments
+        handle_path(".", argv[0]);  // Default to current directory
     }
     else
     {
         for (int i = 1; i < argc; i++)
         {
-            list_directory(argv[i], argv[0]);
+            handle_path(argv[i], argv[0]);
         }
     }
 
