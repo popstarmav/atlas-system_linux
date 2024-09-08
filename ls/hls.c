@@ -10,6 +10,7 @@
  * list_directory - Lists contents of a directory or file
  * @path: Directory or file path to list
  * @program_name: Name of the program (argv[0])
+ *
  * Return: 0 on success, 1 on failure
  */
 int list_directory(const char *path, const char *program_name)
@@ -23,17 +24,18 @@ int list_directory(const char *path, const char *program_name)
     {
         fprintf(stderr, "%s: cannot access '%s': ", program_name, path);
         perror("");
-        return 1;
+        return 1;  // Return 1 to indicate failure
     }
 
-    if (S_ISDIR(path_stat.st_mode)) // Check if it's a directory
+    // Check if it's a directory
+    if (S_ISDIR(path_stat.st_mode))
     {
         dir = opendir(path);
         if (dir == NULL)
         {
             fprintf(stderr, "%s: cannot open directory '%s': ", program_name, path);
             perror("");
-            return 1;
+            return 1;  // Return 1 to indicate failure
         }
 
         printf("%s:\n", path);
@@ -47,13 +49,19 @@ int list_directory(const char *path, const char *program_name)
         printf("\n\n");
         closedir(dir);
     }
-    else  // If it's a file, print its name
+    else if (S_ISREG(path_stat.st_mode))  // If it's a regular file, print its name
     {
         printf("%s\n", path);
     }
+    else  // Handle cases like symbolic links or other file types
+    {
+        fprintf(stderr, "%s: cannot access '%s': Not a directory\n", program_name, path);
+        return 1;  // Return 1 to indicate failure
+    }
 
-    return 0;  // Success
+    return 0;  // Return 0 to indicate success
 }
+
 
 /**
  * main - Entry point
