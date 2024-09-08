@@ -35,15 +35,19 @@ void list_directory(const char *path, const char *program_name)
             exit(EXIT_FAILURE);
         }
 
-        printf("%s:\n", path);
+        // Only print the directory name if there are multiple arguments
+        if (strcmp(path, ".") != 0)
+        {
+            printf("\n");
+        }
+
         while ((entry = readdir(dir)) != NULL)
         {
             if (entry->d_name[0] != '.')  // Skip hidden files
             {
-                printf("%s  ", entry->d_name);
+                printf("%s\n", entry->d_name);
             }
         }
-        printf("\n\n");
         closedir(dir);
     }
     else  // If it's a file, print its name
@@ -75,4 +79,3 @@ int main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 }
-
