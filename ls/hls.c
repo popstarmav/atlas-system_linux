@@ -13,13 +13,12 @@
  *
  * Return: 0 on success, 1 on failure
  */
-int list_directory(const char *path, const char *program_name, int print_dirname)
+int list_directory(const char *path, const char *program_name, int print_dirname, int one_per_line)
 {
     struct dirent *entry;
     DIR *dir;
     struct stat path_stat;
 
-    // Check if the path exists
     if (lstat(path, &path_stat) == -1)
     {
         fprintf(stderr, "%s: cannot access %s: ", program_name, path);
@@ -48,7 +47,14 @@ int list_directory(const char *path, const char *program_name, int print_dirname
         {
             if (entry->d_name[0] != '.')  // Skip hidden files
             {
-                printf("%s  ", entry->d_name);
+                if (one_per_line)
+                {
+                    printf("%s\n", entry->d_name);
+                }
+                else
+                {
+                    printf("%s  ", entry->d_name);
+                }
             }
         }
         printf("\n");
@@ -70,11 +76,20 @@ int list_directory(const char *path, const char *program_name, int print_dirname
 int main(int argc, char *argv[])
 {
     int exit_code = 0;
+    int one_per_line = 0;
+    int start_index = 1;
 
-    if (argc < 2)
+    // Check for -1 option
+    if (argc > 1 && strcmp(argv[1], "-1") == 0)
     {
-        // If no arguments, default to current directory
-        if (list_directory(".", argv[0], 0) != 0)
+        one_per_line = 1;
+        start_index = 2;  // Skip the -1 option
+    }
+
+    // If no file or directory is provided, default to current directory
+    if (argc < start_index + 1)
+    {
+        if (list_directory(".", argv[0], 0, one_per_line) != 0)
         {
             exit_code = 1;
         }
@@ -82,11 +97,16 @@ int main(int argc, char *argv[])
     else
     {
         // Handle each argument (directory or file)
-        for (int i = 1; i < argc; i++)
+        for (int i = start_index; i < argc; i++)
         {
-            // Print directory name if more than one argument
-            int print_dirname = (argc > 2) ? 1 : 0;
-            if (list_directory(argv[i], argv[0], print_dirname) != 0)
+            // Check if the argument is "-1" (should not be processed as a file or directory)
+            if (strcmp(argv[i], "-1") == 0)
+            {
+                continue;  // Skip the -1 option
+            }
+
+            int print_dirname = (argc > start_index + 1) ? 1 : 0;
+            if (list_directory(argv[i], argv[0], print_dirname, one_per_line) != 0)
             {
                 exit_code = 1;
             }
