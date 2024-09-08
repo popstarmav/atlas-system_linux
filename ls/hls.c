@@ -13,16 +13,17 @@
  *
  * Return: 0 on success, 1 on failure
  */
-int list_directory(const char *path, const char *program_name)
+int list_directory(const char *path, const char *program_name, int print_dirname)
 {
     struct dirent *entry;
     DIR *dir;
     struct stat path_stat;
 
+    // Check if the path exists
     if (lstat(path, &path_stat) == -1)
     {
-        fprintf(stderr, "%s: cannot access '%s': ", program_name, path);
-        perror("");  // Print appropriate error message (e.g., No such file or directory)
+        fprintf(stderr, "%s: cannot access %s: ", program_name, path);
+        perror("");  // Print "No such file or directory" error
         return 1;
     }
 
@@ -31,11 +32,18 @@ int list_directory(const char *path, const char *program_name)
         dir = opendir(path);
         if (dir == NULL)
         {
-            fprintf(stderr, "%s: cannot open directory '%s': ", program_name, path);
+            fprintf(stderr, "%s: cannot open directory %s: ", program_name, path);
             perror("");  // Handle "Permission denied" or other errors
             return 1;
         }
 
+        // Print the directory name (if required)
+        if (print_dirname)
+        {
+            printf("%s:\n", path);
+        }
+
+        // Read the directory contents
         while ((entry = readdir(dir)) != NULL)
         {
             if (entry->d_name[0] != '.')  // Skip hidden files
@@ -52,41 +60,41 @@ int list_directory(const char *path, const char *program_name)
     }
     else
     {
-        fprintf(stderr, "%s: cannot access '%s': Not a directory\n", program_name, path);
+        fprintf(stderr, "%s: cannot access %s: Not a directory\n", program_name, path);
         return 1;
     }
 
     return 0;
 }
 
-
-/**
- * main - Entry point
- * @argc: Argument count
- * @argv: Argument vector (file/directory names)
- *
- * Return: 0 on success, 1 on failure
- */
 int main(int argc, char *argv[])
 {
     int exit_code = 0;
 
     if (argc < 2)
     {
-        // Default to current directory if no arguments are provided
-        if (list_directory(".", argv[0]) != 0)
+        // If no arguments, default to current directory
+        if (list_directory(".", argv[0], 0) != 0)
         {
             exit_code = 1;
         }
     }
     else
     {
-        // Process each argument
+        // Handle each argument (directory or file)
         for (int i = 1; i < argc; i++)
         {
-            if (list_directory(argv[i], argv[0]) != 0)
+            // Print directory name if more than one argument
+            int print_dirname = (argc > 2) ? 1 : 0;
+            if (list_directory(argv[i], argv[0], print_dirname) != 0)
             {
                 exit_code = 1;
+            }
+
+            // Print a blank line between multiple directories
+            if (i < argc - 1)
+            {
+                printf("\n");
             }
         }
     }
