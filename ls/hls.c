@@ -19,26 +19,23 @@ int list_directory(const char *path, const char *program_name)
     DIR *dir;
     struct stat path_stat;
 
-    // Use lstat to check if path is a file or directory
     if (lstat(path, &path_stat) == -1)
     {
         fprintf(stderr, "%s: cannot access '%s': ", program_name, path);
-        perror("");
-        return 1;  // Return 1 to indicate failure
+        perror("");  // Print appropriate error message (e.g., No such file or directory)
+        return 1;
     }
 
-    // Check if it's a directory
     if (S_ISDIR(path_stat.st_mode))
     {
         dir = opendir(path);
         if (dir == NULL)
         {
             fprintf(stderr, "%s: cannot open directory '%s': ", program_name, path);
-            perror("");
-            return 1;  // Return 1 to indicate failure
+            perror("");  // Handle "Permission denied" or other errors
+            return 1;
         }
 
-        printf("%s:\n", path);
         while ((entry = readdir(dir)) != NULL)
         {
             if (entry->d_name[0] != '.')  // Skip hidden files
@@ -46,20 +43,20 @@ int list_directory(const char *path, const char *program_name)
                 printf("%s  ", entry->d_name);
             }
         }
-        printf("\n\n");
+        printf("\n");
         closedir(dir);
     }
-    else if (S_ISREG(path_stat.st_mode))  // If it's a regular file, print its name
+    else if (S_ISREG(path_stat.st_mode))  // Handle regular files
     {
         printf("%s\n", path);
     }
-    else  // Handle cases like symbolic links or other file types
+    else
     {
         fprintf(stderr, "%s: cannot access '%s': Not a directory\n", program_name, path);
-        return 1;  // Return 1 to indicate failure
+        return 1;
     }
 
-    return 0;  // Return 0 to indicate success
+    return 0;
 }
 
 
