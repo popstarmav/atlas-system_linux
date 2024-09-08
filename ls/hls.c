@@ -7,9 +7,30 @@
 #include <sys/stat.h>
 
 /**
+ * string_equals - Compares two strings for equality
+ * @str1: First string
+ * @str2: Second string
+ *
+ * Return: 1 if strings are equal, 0 otherwise
+ */
+int string_equals(const char *str1, const char *str2)
+{
+    while (*str1 && *str2)
+    {
+        if (*str1 != *str2)
+            return 0;
+        str1++;
+        str2++;
+    }
+    return *str1 == *str2;
+}
+
+/**
  * list_directory - Lists contents of a directory or file
  * @path: Directory or file path to list
  * @program_name: Name of the program (argv[0])
+ * @print_dirname: Whether to print the directory name
+ * @one_per_line: Whether to print one file per line
  *
  * Return: 0 on success, 1 on failure
  */
@@ -80,7 +101,7 @@ int main(int argc, char *argv[])
     int start_index = 1;
 
     // Check for -1 option
-    if (argc > 1 && strcmp(argv[1], "-1") == 0)
+    if (argc > 1 && string_equals(argv[1], "-1"))
     {
         one_per_line = 1;
         start_index = 2;  // Skip the -1 option
@@ -100,7 +121,7 @@ int main(int argc, char *argv[])
         for (int i = start_index; i < argc; i++)
         {
             // Check if the argument is "-1" (should not be processed as a file or directory)
-            if (strcmp(argv[i], "-1") == 0)
+            if (string_equals(argv[i], "-1"))
             {
                 continue;  // Skip the -1 option
             }
