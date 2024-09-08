@@ -4,6 +4,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/stat.h>
 
 /**
  * list_directory - Lists contents of a directory or file
@@ -13,37 +14,42 @@
 void list_directory(const char *path, const char *program_name)
 {
     struct dirent *entry;
-    DIR *dir = opendir(path);
+    DIR *dir;
+    struct stat path_stat;
 
-    if (dir == NULL)
+    // Use lstat to check if path is a file or directory
+    if (lstat(path, &path_stat) == -1)
     {
-        // Error handling for files and directories
-        FILE *fp = fopen(path, "r");
-        if (fp == NULL)
-        {
-            // Print error to stderr
-            fprintf(stderr, "%s: cannot access '%s': %s\n", program_name, path, strerror(errno));
-            exit(EXIT_FAILURE);  // Non-zero exit on error
-        }
-        else
-        {
-            printf("%s\n", path);  // If it's a file, print the filename
-            fclose(fp);
-        }
-        return;
+        fprintf(stderr, "%s: cannot access '%s': ", program_name, path);
+        perror("");
+        exit(EXIT_FAILURE);
     }
 
-    printf("%s:\n", path);  // Print directory name
-    while ((entry = readdir(dir)) != NULL)
+    if (S_ISDIR(path_stat.st_mode)) // Check if it's a directory
     {
-        if (entry->d_name[0] != '.')  // Skip hidden files
+        dir = opendir(path);
+        if (dir == NULL)
         {
-            printf("%s  ", entry->d_name);
+            fprintf(stderr, "%s: cannot open directory '%s': ", program_name, path);
+            perror("");
+            exit(EXIT_FAILURE);
         }
-    }
 
-    printf("\n\n");
-    closedir(dir);
+        printf("%s:\n", path);
+        while ((entry = readdir(dir)) != NULL)
+        {
+            if (entry->d_name[0] != '.')  // Skip hidden files
+            {
+                printf("%s  ", entry->d_name);
+            }
+        }
+        printf("\n\n");
+        closedir(dir);
+    }
+    else  // If it's a file, print its name
+    {
+        printf("%s\n", path);
+    }
 }
 
 /**
