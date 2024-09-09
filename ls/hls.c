@@ -1,10 +1,10 @@
 #include "hls.h"
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
 #include <dirent.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <string.h>
 
 /**
  * custom_strcmp - Case-insensitive string comparison
@@ -40,7 +40,7 @@ int compare_entries(const void *a, const void *b) {
  * list_directory - Lists contents of a directory or file
  * @path: Directory or file path to list
  * @program_name: Name of the program (argv[0])
- * @one_per_line: Print each entry on a new line
+ * @one_per_line: Print each entry on a new line if true
  * 
  * Return: 0 on success, 1 on failure
  */
@@ -99,10 +99,9 @@ int list_directory(const char *path, const char *program_name, int one_per_line)
         qsort(entries, count, sizeof(char *), compare_entries);
 
         for (int i = 0; i < count; i++) {
-            printf("%s%s", entries[i], one_per_line ? "\n" : "  ");
+            printf("%s\n", entries[i]); // Print each entry on a new line
             free(entries[i]);
         }
-        if (!one_per_line) printf("\n");
 
         free(entries);
     } else if (S_ISREG(path_stat.st_mode)) {
@@ -127,17 +126,24 @@ int main(int argc, char *argv[]) {
     int one_per_line = 0;
     int start_index = 1;
 
+    // Check for -1 option
     if (argc > 1 && custom_strcmp(argv[1], "-1") == 0) {
         one_per_line = 1;
-        start_index = 2;
+        start_index = 2;  // Skip the -1 option
     }
 
+    // If no file or directory is provided, default to current directory
     if (argc == start_index) {
         if (list_directory(".", argv[0], one_per_line) != 0) {
             exit_code = 1;
         }
     } else {
         for (int i = start_index; i < argc; i++) {
+            // Skip if the argument is "-1" (should not be processed as a file or directory)
+            if (custom_strcmp(argv[i], "-1") == 0) {
+                continue;
+            }
+
             if (list_directory(argv[i], argv[0], one_per_line) != 0) {
                 exit_code = 1;
             }

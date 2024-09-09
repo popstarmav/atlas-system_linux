@@ -2,6 +2,7 @@
 #define HSL_H
 
 #include <sys/types.h>
+#include <string.h>
 #include <stdio.h>
 #include <dirent.h>
 
