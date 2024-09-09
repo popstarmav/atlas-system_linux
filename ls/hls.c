@@ -15,14 +15,19 @@
  */
 int string_equals(const char *str1, const char *str2)
 {
-    while (*str1 && *str2)
-    {
-        if (*str1 != *str2)
-            return 0;
-        str1++;
-        str2++;
-    }
-    return *str1 == *str2;
+    return strcmp(str1, str2) == 0;
+}
+
+/**
+ * compare_strings - Comparison function for qsort
+ * @a: First string
+ * @b: Second string
+ *
+ * Return: Negative if a < b, 0 if a == b, positive if a > b
+ */
+int compare_strings(const void *a, const void *b)
+{
+    return strcmp(*(const char **)a, *(const char **)b);
 }
 
 /**
@@ -39,11 +44,13 @@ int list_directory(const char *path, const char *program_name, int print_dirname
     struct dirent *entry;
     DIR *dir;
     struct stat path_stat;
+    char **file_list = NULL;
+    int file_count = 0;
 
     if (lstat(path, &path_stat) == -1)
     {
         fprintf(stderr, "%s: cannot access %s: ", program_name, path);
-        perror("");  // Print "No such file or directory" error
+        perror("");
         return 1;
     }
 
@@ -53,7 +60,7 @@ int list_directory(const char *path, const char *program_name, int print_dirname
         if (dir == NULL)
         {
             fprintf(stderr, "%s: cannot open directory %s: ", program_name, path);
-            perror("");  // Handle "Permission denied" or other errors
+            perror("");
             return 1;
         }
 
@@ -63,23 +70,50 @@ int list_directory(const char *path, const char *program_name, int print_dirname
             printf("%s:\n", path);
         }
 
-        // Read the directory contents
+        // Allocate memory for file list
+        file_list = malloc(sizeof(char *) * 1024);  // Assume a maximum of 1024 entries
+        if (!file_list)
+        {
+            fprintf(stderr, "Memory allocation error\n");
+            closedir(dir);
+            return 1;
+        }
+
+        // Read the directory contents and store them in an array
         while ((entry = readdir(dir)) != NULL)
         {
             if (entry->d_name[0] != '.')  // Skip hidden files
             {
-                if (one_per_line)
+                file_list[file_count] = strdup(entry->d_name);  // Duplicate the string
+                if (!file_list[file_count])
                 {
-                    printf("%s\n", entry->d_name);
+                    fprintf(stderr, "Memory allocation error\n");
+                    closedir(dir);
+                    return 1;
                 }
-                else
-                {
-                    printf("%s  ", entry->d_name);
-                }
+                file_count++;
             }
         }
-        printf("\n");
         closedir(dir);
+
+        // Sort the array alphabetically
+        qsort(file_list, file_count, sizeof(char *), compare_strings);
+
+        // Print the sorted contents
+        for (int i = 0; i < file_count; i++)
+        {
+            if (one_per_line)
+            {
+                printf("%s\n", file_list[i]);
+            }
+            else
+            {
+                printf("%s  ", file_list[i]);
+            }
+            free(file_list[i]);  // Free the allocated memory for each string
+        }
+        printf("\n");
+        free(file_list);  // Free the array
     }
     else if (S_ISREG(path_stat.st_mode))  // Handle regular files
     {
@@ -98,17 +132,19 @@ int main(int argc, char *argv[])
 {
     int exit_code = 0;
     int one_per_line = 0;
-    int start_index = 1;
 
-    // Check for -1 option
-    if (argc > 1 && string_equals(argv[1], "-1"))
+    // First, check if the -1 option is provided anywhere in the arguments
+    for (int i = 1; i < argc; i++)
     {
-        one_per_line = 1;
-        start_index = 2;  // Skip the -1 option
+        if (string_equals(argv[i], "-1"))
+        {
+            one_per_line = 1;
+            break;
+        }
     }
 
     // If no file or directory is provided, default to current directory
-    if (argc < start_index + 1)
+    if (argc == 1 || (argc == 2 && one_per_line))
     {
         if (list_directory(".", argv[0], 0, one_per_line) != 0)
         {
@@ -118,15 +154,15 @@ int main(int argc, char *argv[])
     else
     {
         // Handle each argument (directory or file)
-        for (int i = start_index; i < argc; i++)
+        for (int i = 1; i < argc; i++)
         {
-            // Check if the argument is "-1" (should not be processed as a file or directory)
+            // Skip the -1 option if encountered
             if (string_equals(argv[i], "-1"))
             {
-                continue;  // Skip the -1 option
+                continue;
             }
 
-            int print_dirname = (argc > start_index + 1) ? 1 : 0;
+            int print_dirname = (argc > 2) ? 1 : 0;
             if (list_directory(argv[i], argv[0], print_dirname, one_per_line) != 0)
             {
                 exit_code = 1;
