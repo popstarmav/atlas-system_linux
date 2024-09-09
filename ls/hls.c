@@ -109,6 +109,7 @@ int main(int argc, char *argv[]) {
     int exit_code = 0;
     int one_per_line = 0;
 
+    // Parse command-line arguments
     for (int i = 1; i < argc; i++) {
         if (argv[i][0] == '-' && argv[i][1] == '1' && argv[i][2] == '\0') {
             one_per_line = 1;
@@ -126,7 +127,6 @@ int main(int argc, char *argv[]) {
             if (argv[i][0] == '-' && argv[i][1] == '1' && argv[i][2] == '\0') {
                 continue; // Skip the -1 option
             }
-            int print_dirname = (argc > 2) ? 1 : 0; // Print directory name if there are multiple directories/files
             if (list_directory(argv[i], argv[0], one_per_line) != 0) {
                 exit_code = 1;
             }
@@ -138,3 +138,4 @@ int main(int argc, char *argv[]) {
 
     return exit_code;
 }
+
