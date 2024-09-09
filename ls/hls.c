@@ -1,8 +1,8 @@
 #include "hls.h"
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <dirent.h>
-#include <string.h>
 #include <errno.h>
 #include <sys/stat.h>
 
@@ -30,25 +30,25 @@ int list_directory(const char *path, const char *program_name, int one_per_line)
     int count = 0;
     int capacity = 10;
 
-    entries = malloc(capacity * sizeof(char *));
-    if (entries == NULL) {
-        perror("malloc");
-        return 1;
-    }
-
     if (lstat(path, &path_stat) == -1) {
         fprintf(stderr, "%s: cannot access %s: ", program_name, path);
         perror("");
-        free(entries);
         return 1;
     }
 
     if (S_ISDIR(path_stat.st_mode)) {
+        printf("%s:\n", path);
         dir = opendir(path);
         if (dir == NULL) {
             fprintf(stderr, "%s: cannot open directory %s: ", program_name, path);
             perror("");
-            free(entries);
+            return 1;
+        }
+
+        entries = malloc(capacity * sizeof(char *));
+        if (entries == NULL) {
+            perror("malloc");
+            closedir(dir);
             return 1;
         }
 
@@ -78,52 +78,46 @@ int list_directory(const char *path, const char *program_name, int one_per_line)
         qsort(entries, count, sizeof(char *), compare_entries);
 
         for (int i = 0; i < count; i++) {
-            printf("%s", entries[i]);
-            if (one_per_line || i == count - 1) {
-                printf("\n");
-            } else {
-                printf("  ");
-            }
+            printf("%s\n", entries[i]);
             free(entries[i]);
         }
+
+        free(entries);
     } else if (S_ISREG(path_stat.st_mode)) {
         printf("%s\n", path);
     } else {
         fprintf(stderr, "%s: cannot access %s: Not a directory\n", program_name, path);
-        free(entries);
         return 1;
     }
 
-    free(entries);
     return 0;
 }
 
 int main(int argc, char *argv[]) {
     int exit_code = 0;
     int one_per_line = 0;
+    int start_index = 1;
 
-    for (int i = 1; i < argc; i++) {
-        if (custom_strcmp(argv[i], "-1") == 0) {
-            one_per_line = 1;
-            break;
-        }
+    if (argc > 1 && custom_strcmp(argv[1], "-1") == 0) {
+        one_per_line = 1;
+        start_index = 2;
     }
 
-    if (argc == 1 || (argc == 2 && one_per_line)) {
+    if (argc == start_index) {
         if (list_directory(".", argv[0], one_per_line) != 0) {
             exit_code = 1;
         }
     } else {
-        for (int i = 1; i < argc; i++) {
-            if (custom_strcmp(argv[i], "-1") == 0) {
-                continue;
-            }
-
+        for (int i = start_index; i < argc; i++) {
             if (list_directory(argv[i], argv[0], one_per_line) != 0) {
                 exit_code = 1;
+            }
+            if (i < argc - 1) {
+                printf("\n");
             }
         }
     }
 
     return exit_code;
 }
+
