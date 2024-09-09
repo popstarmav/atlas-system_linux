@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <dirent.h>
 #include <string.h>
+#include <sys/stat.h>  // Include for stat and lstat
 #include <errno.h>
 
 // Custom case-insensitive string comparison function
@@ -15,19 +16,6 @@ int custom_strcmp(const char *a, const char *b) {
         b++;
     }
     return *a - *b;
-}
-
-// Simple bubble sort for sorting entries
-void bubble_sort(char **entries, int count) {
-    for (int i = 0; i < count - 1; i++) {
-        for (int j = 0; j < count - 1 - i; j++) {
-            if (custom_strcmp(entries[j], entries[j + 1]) > 0) {
-                char *temp = entries[j];
-                entries[j] = entries[j + 1];
-                entries[j + 1] = temp;
-            }
-        }
-    }
 }
 
 int list_directory(const char *path, int force_one_per_line) {
@@ -78,7 +66,15 @@ int list_directory(const char *path, int force_one_per_line) {
     closedir(dir);
 
     // Sort the entries using bubble sort
-    bubble_sort(entries, count);
+    for (int i = 0; i < count - 1; i++) {
+        for (int j = 0; j < count - 1 - i; j++) {
+            if (custom_strcmp(entries[j], entries[j + 1]) > 0) {
+                char *temp = entries[j];
+                entries[j] = entries[j + 1];
+                entries[j + 1] = temp;
+            }
+        }
+    }
 
     // Print the entries based on the `-1` option
     for (int i = 0; i < count; i++) {
@@ -104,7 +100,7 @@ int main(int argc, char *argv[]) {
 
     // Handle command-line arguments
     if (argc > 1) {
-        if (strcmp(argv[1], "-1") == 0) {
+        if (custom_strcmp(argv[1], "-1") == 0) {
             force_one_per_line = 1;
             if (argc > 2) {
                 path = argv[2];  // If path is provided after `-1`
@@ -114,6 +110,18 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // List the directory based on the path and options
-    return list_directory(path, force_one_per_line);
+    // Check if the given path is a directory or a file
+    struct stat path_stat;
+    if (lstat(path, &path_stat) == -1) {
+        perror("lstat");
+        return 1;
+    }
+
+    if (S_ISDIR(path_stat.st_mode)) {
+        return list_directory(path, force_one_per_line);
+    } else {
+        perror("Error opening directory: Not a directory");
+        return 1;
+    }
 }
+
