@@ -15,7 +15,12 @@
  */
 int string_equals(const char *str1, const char *str2)
 {
-    return strcmp(str1, str2) == 0;
+    while (*str1 && (*str1 == *str2))
+    {
+        str1++;
+        str2++;
+    }
+    return (*str1 == '\0' && *str2 == '\0');
 }
 
 /**
@@ -27,7 +32,15 @@ int string_equals(const char *str1, const char *str2)
  */
 int compare_strings(const void *a, const void *b)
 {
-    return strcmp(*(const char **)a, *(const char **)b);
+    const char *str1 = *(const char **)a;
+    const char *str2 = *(const char **)b;
+
+    while (*str1 && (*str1 == *str2))
+    {
+        str1++;
+        str2++;
+    }
+    return (*str1 - *str2);
 }
 
 /**
