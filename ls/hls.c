@@ -1,15 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
-#include <string.h>
-#include <sys/stat.h>  // Include for stat and lstat
 #include <errno.h>
+#include <string.h>   // For strerror() to interpret error numbers
+#include <ctype.h>    // For tolower()
 
-// Custom case-insensitive string comparison function
 int custom_strcmp(const char *a, const char *b) {
     while (*a && *b) {
-        char lower_a = (*a >= 'A' && *a <= 'Z') ? *a + 32 : *a;
-        char lower_b = (*b >= 'A' && *b <= 'Z') ? *b + 32 : *b;
+        char lower_a = tolower(*a);
+        char lower_b = tolower(*b);
         if (lower_a != lower_b)
             return lower_a - lower_b;
         a++;
@@ -18,7 +17,11 @@ int custom_strcmp(const char *a, const char *b) {
     return *a - *b;
 }
 
-int list_directory(const char *path, int force_one_per_line) {
+int compare_entries(const void *a, const void *b) {
+    return custom_strcmp(*(const char **)a, *(const char **)b);
+}
+
+int list_directory(const char *path, int one_per_line) {
     DIR *dir;
     struct dirent *entry;
     char **entries = NULL;
@@ -39,22 +42,33 @@ int list_directory(const char *path, int force_one_per_line) {
         return 1;
     }
 
-    // Read directory contents and store in entries array
+    // Read directory entries
     while ((entry = readdir(dir)) != NULL) {
-        if (entry->d_name[0] != '.') {  // Skip hidden files
+        if (entry->d_name[0] != '.') {
+            // Reallocate memory if necessary
             if (count == capacity) {
                 capacity *= 2;
-                entries = realloc(entries, capacity * sizeof(char *));
-                if (entries == NULL) {
+                char **new_entries = realloc(entries, capacity * sizeof(char *));
+                if (new_entries == NULL) {
                     perror("Error reallocating memory");
                     closedir(dir);
+                    for (int i = 0; i < count; i++) {
+                        free(entries[i]);
+                    }
+                    free(entries);
                     return 1;
                 }
+                entries = new_entries;
             }
+            // Allocate memory for the current entry and copy the entry's name
             entries[count] = malloc(strlen(entry->d_name) + 1);
             if (entries[count] == NULL) {
                 perror("Error allocating memory");
                 closedir(dir);
+                for (int i = 0; i < count; i++) {
+                    free(entries[i]);
+                }
+                free(entries);
                 return 1;
             }
             strcpy(entries[count], entry->d_name);
@@ -65,63 +79,41 @@ int list_directory(const char *path, int force_one_per_line) {
     // Close the directory
     closedir(dir);
 
-    // Sort the entries using bubble sort
-    for (int i = 0; i < count - 1; i++) {
-        for (int j = 0; j < count - 1 - i; j++) {
-            if (custom_strcmp(entries[j], entries[j + 1]) > 0) {
-                char *temp = entries[j];
-                entries[j] = entries[j + 1];
-                entries[j + 1] = temp;
-            }
-        }
-    }
+    // Sort the entries using custom comparison
+    qsort(entries, count, sizeof(char *), compare_entries);
 
-    // Print the entries based on the `-1` option
+    // Print the entries
     for (int i = 0; i < count; i++) {
-        if (force_one_per_line) {
+        if (one_per_line) {
             printf("%s\n", entries[i]);
         } else {
             printf("%s  ", entries[i]);
         }
-        free(entries[i]);  // Free each entry after printing
-    }
-    if (!force_one_per_line) {
-        printf("\n");
+        free(entries[i]); // Free the memory for each entry
     }
 
-    // Free the entries array
-    free(entries);
+    if (!one_per_line) {
+        printf("\n"); // Newline if not printing one entry per line
+    }
+
+    free(entries); // Free the list of entries
     return 0;
 }
 
 int main(int argc, char *argv[]) {
-    int force_one_per_line = 0;
-    char *path = ".";
+    int one_per_line = 0;  // Flag for the `-1` option
+    char *path = ".";      // Default to the current directory
 
-    // Handle command-line arguments
-    if (argc > 1) {
-        if (custom_strcmp(argv[1], "-1") == 0) {
-            force_one_per_line = 1;
-            if (argc > 2) {
-                path = argv[2];  // If path is provided after `-1`
-            }
+    // Parse command-line arguments
+    for (int i = 1; i < argc; i++) {
+        if (argv[i][0] == '-' && argv[i][1] == '1' && argv[i][2] == '\0') {
+            one_per_line = 1;  // Set flag if `-1` is passed
+        } else if (argv[i][0] != '-') {
+            path = argv[i];  // Set path to the first non-option argument
         } else {
-            path = argv[1];  // If only path is provided
+            printf("Unrecognized option: %s\n", argv[i]);
         }
     }
 
-    // Check if the given path is a directory or a file
-    struct stat path_stat;
-    if (lstat(path, &path_stat) == -1) {
-        perror("lstat");
-        return 1;
-    }
-
-    if (S_ISDIR(path_stat.st_mode)) {
-        return list_directory(path, force_one_per_line);
-    } else {
-        perror("Error opening directory: Not a directory");
-        return 1;
-    }
+    return list_directory(path, one_per_line);
 }
-
