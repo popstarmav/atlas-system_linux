@@ -1,10 +1,14 @@
-#include "hls.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
 #include <errno.h>
 #include <string.h>
 #include <sys/stat.h>
+
+// Define PATH_MAX if it is not already defined
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 
 // Custom string comparison function without using strcmp
 int custom_strcmp(const char *a, const char *b) {
@@ -25,7 +29,7 @@ int compare_entries(const void *a, const void *b) {
 }
 
 // Function to list directory contents
-int list_directory(const char *path, const char *program_name, int one_per_line) {
+int list_directory(const char *path, const char *program_name, int one_per_line, int depth) {
     struct dirent *entry;
     DIR *dir;
     struct stat path_stat;
@@ -45,6 +49,10 @@ int list_directory(const char *path, const char *program_name, int one_per_line)
             fprintf(stderr, "%s: cannot open directory %s: ", program_name, path);
             perror("");
             return 1;
+        }
+
+        if (depth > 0) {
+            printf("%s:\n", path);
         }
 
         entries = malloc(capacity * sizeof(char *));
@@ -80,11 +88,17 @@ int list_directory(const char *path, const char *program_name, int one_per_line)
         qsort(entries, count, sizeof(char *), compare_entries);
 
         for (int i = 0; i < count; i++) {
-            printf("%s", entries[i]);
             if (one_per_line) {
-                printf("\n"); // Print each entry on a new line
+                printf("%s\n", entries[i]);
             } else {
-                printf("  "); // Print entries separated by space
+                printf("%s  ", entries[i]);
+            }
+            // Print contents of subdirectories recursively
+            char new_path[PATH_MAX];
+            snprintf(new_path, sizeof(new_path), "%s/%s", path, entries[i]);
+            lstat(new_path, &path_stat);
+            if (S_ISDIR(path_stat.st_mode)) {
+                list_directory(new_path, program_name, one_per_line, depth + 1);
             }
             free(entries[i]);
         }
@@ -118,7 +132,7 @@ int main(int argc, char *argv[]) {
 
     // If no file or directory is provided, default to current directory
     if (argc == 1 || (argc == 2 && one_per_line)) {
-        if (list_directory(".", argv[0], one_per_line) != 0) {
+        if (list_directory(".", argv[0], one_per_line, 0) != 0) {
             exit_code = 1;
         }
     } else {
@@ -127,7 +141,7 @@ int main(int argc, char *argv[]) {
             if (argv[i][0] == '-' && argv[i][1] == '1' && argv[i][2] == '\0') {
                 continue; // Skip the -1 option
             }
-            if (list_directory(argv[i], argv[0], one_per_line) != 0) {
+            if (list_directory(argv[i], argv[0], one_per_line, 0) != 0) {
                 exit_code = 1;
             }
             if (i < argc - 1) {
@@ -138,4 +152,3 @@ int main(int argc, char *argv[]) {
 
     return exit_code;
 }
-
