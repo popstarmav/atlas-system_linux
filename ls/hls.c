@@ -110,11 +110,10 @@ int main(int argc, char *argv[]) {
             one_per_line = 1;  // Set flag if `-1` is passed
         } else if (argv[i][0] != '-') {
             path = argv[i];  // Set path to the first non-option argument
-            list_directory(path, one_per_line);
         } else {
             printf("Unrecognized option: %s\n", argv[i]);
         }
     }
 
-    return (0);
+    return list_directory(path, one_per_line);
 }
