@@ -1,76 +1,39 @@
 #!/usr/bin/python3
-"""Finds & overwrites a string in a process' memory file"""
+"""Finds & overwrites a string in a process' mem file"""
 
-import sys
+from sys import argv
 
 USAGE = "USAGE: read_write_heap.py pid search_string replace_string"
 
-
-def get_heap_memory(pid):
+def parse_maps_file(pid):
     """Parses /proc/PID/maps file for heap info"""
     heap_start = heap_stop = None
-    try:
-        with open(f"/proc/{pid}/maps", "r") as file:
-            for line in file:
-                if "[heap]" in line:
-                    heap_start, heap_stop = [int(x, 16) for x in line.split()[0].split("-")]
-                    print(f"[*] Heap starts at {heap_start:02X}")
-                    return heap_start, heap_stop
-    except FileNotFoundError:
-        print(f"[ERROR] Process with PID {pid} does not exist.")
-        sys.exit(1)
-    except Exception as e:
-        print(f"[ERROR] Could not read heap memory: {e}")
-        sys.exit(1)
+    with open(f"/proc/{pid}/maps", "r") as file:
+        for line in file:
+            if "[heap]" in line:
+                heap_start, heap_stop = [int(x, 16) for x in line.split(" ")[0].split("-")]
+    if heap_start is None or heap_stop is None:
+        exit(1)
+    return heap_start, heap_stop
 
-    print("[ERROR] Heap address not found.")
-    sys.exit(1)
-
-
-def replace_string_in_memory(pid, search_string, replace_string, heap_start, heap_stop):
+def update_mem_file(pid, search_string, replace_string, heap_start, heap_stop):
     """Finds search_string in /proc/PID/mem and writes replace_string"""
-    try:
-        with open(f"/proc/{pid}/mem", "r+b") as mem_file:
-            mem_file.seek(heap_start)
-            data = mem_file.read(heap_stop - heap_start)
-            print(f"[*] Read {heap_stop - heap_start} bytes")
-            string_offset = data.find(search_string.encode())
-
-            if string_offset != -1:
-                print(f"[*] String found at {heap_start + string_offset:02X}")
-                mem_file.seek(heap_start + string_offset)
-                written = mem_file.write(replace_string.encode() + b'\x00')
-                print(f"[*] {written} bytes written!")
-            else:
-                print(f"[ERROR] String '{search_string}' not found in heap.")
-                sys.exit(1)
-    except Exception as e:
-        print(f"[ERROR] Could not update memory: {e}")
-        sys.exit(1)
-
-
-def main():
-    if len(sys.argv) != 4:
-        print(USAGE)
-        sys.exit(1)
-
-    pid = sys.argv[1]
-    search_string = sys.argv[2]
-    replace_string = sys.argv[3]
-
-    if not pid.isdigit():
-        print("[ERROR] PID must be a number.")
-        sys.exit(1)
-
-    if len(search_string) != len(replace_string):
-        print("[ERROR] Strings must be the same length.")
-        sys.exit(1)
-
-    pid = int(pid)
-    heap_start, heap_stop = get_heap_memory(pid)
-    replace_string_in_memory(pid, search_string, replace_string, heap_start, heap_stop)
-
+    with open(f"/proc/{pid}/mem", "r+b") as f:
+        f.seek(heap_start)
+        data = f.read(heap_stop - heap_start)
+        string_offset = data.find(search_string.encode())
+        if string_offset > -1:
+            f.seek(heap_start + string_offset)
+            f.write(replace_string.encode())
+            print("SUCCESS!")
+            return
+    exit(1)
 
 if __name__ == "__main__":
-    main()
+    if len(argv) != 4 or len(argv[2]) != len(argv[3]):
+        print(USAGE)
+        exit(1)
+
+    heap_start, heap_stop = parse_maps_file(int(argv[1]))
+    update_mem_file(int(argv[1]), argv[2], argv[3], heap_start, heap_stop)
 
