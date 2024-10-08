@@ -1,91 +1,75 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
+"""Finds & overwrites a string in a process' memory file"""
 
-"""
-Module for reading and writing to the heap of a running process.
-This script finds a string in the heap and replaces it.
-"""
-
-import os
 import sys
 
-def print_usage():
-    print("Usage: read_write_heap.py pid search_string replace_string")
-    sys.exit(1)
+USAGE = "USAGE: read_write_heap.py pid search_string replace_string"
+
 
 def get_heap_memory(pid):
-    """Get the start and end addresses of the heap memory."""
+    """Parses /proc/PID/maps file for heap info"""
+    heap_start = heap_stop = None
     try:
-        with open(f"/proc/{pid}/maps", "r") as f:
-            for line in f:
+        with open(f"/proc/{pid}/maps", "r") as file:
+            for line in file:
                 if "[heap]" in line:
-                    parts = line.split()
-                    address_range = parts[0].split('-')
-                    start = int(address_range[0], 16)
-                    end = int(address_range[1], 16)
-                    return start, end
+                    heap_start, heap_stop = [int(x, 16) for x in line.split()[0].split("-")]
+                    print(f"[*] Heap starts at {heap_start:02X}")
+                    return heap_start, heap_stop
     except FileNotFoundError:
-        print(f"Error: Process with PID {pid} does not exist.")
-    except Exception:
-        print("Error: Unable to access heap memory.")
-    return None
+        print(f"[ERROR] Process with PID {pid} does not exist.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"[ERROR] Could not read heap memory: {e}")
+        sys.exit(1)
 
-def read_heap(pid, start, end):
-    """Read the heap memory of the specified process."""
-    try:
-        with open(f"/proc/{pid}/mem", "rb") as mem_file:
-            mem_file.seek(start)
-            return mem_file.read(end - start)
-    except Exception:
-        return None
+    print("[ERROR] Heap address not found.")
+    sys.exit(1)
 
-def write_heap(pid, start, heap_content):
-    """Write modified content back to the heap memory of the specified process."""
+
+def replace_string_in_memory(pid, search_string, replace_string, heap_start, heap_stop):
+    """Finds search_string in /proc/PID/mem and writes replace_string"""
     try:
         with open(f"/proc/{pid}/mem", "r+b") as mem_file:
-            mem_file.seek(start)
-            mem_file.write(heap_content)
-    except Exception:
-        pass
+            mem_file.seek(heap_start)
+            data = mem_file.read(heap_stop - heap_start)
+            print(f"[*] Read {heap_stop - heap_start} bytes")
+            string_offset = data.find(search_string.encode())
+
+            if string_offset != -1:
+                print(f"[*] String found at {heap_start + string_offset:02X}")
+                mem_file.seek(heap_start + string_offset)
+                written = mem_file.write(replace_string.encode() + b'\x00')
+                print(f"[*] {written} bytes written!")
+            else:
+                print(f"[ERROR] String '{search_string}' not found in heap.")
+                sys.exit(1)
+    except Exception as e:
+        print(f"[ERROR] Could not update memory: {e}")
+        sys.exit(1)
+
 
 def main():
     if len(sys.argv) != 4:
-        print_usage()
-
-    pid = sys.argv[1]
-    search_string = sys.argv[2].encode()
-    replace_string = sys.argv[3].encode()
-
-    if len(search_string) != len(replace_string):
-        print("Error: Strings must be the same length.")
+        print(USAGE)
         sys.exit(1)
 
+    pid = sys.argv[1]
+    search_string = sys.argv[2]
+    replace_string = sys.argv[3]
+
     if not pid.isdigit():
-        print("Error: Invalid PID.")
+        print("[ERROR] PID must be a number.")
+        sys.exit(1)
+
+    if len(search_string) != len(replace_string):
+        print("[ERROR] Strings must be the same length.")
         sys.exit(1)
 
     pid = int(pid)
+    heap_start, heap_stop = get_heap_memory(pid)
+    replace_string_in_memory(pid, search_string, replace_string, heap_start, heap_stop)
 
-    heap_range = get_heap_memory(pid)
-    if not heap_range:
-        print("Error: Heap not found.")
-        sys.exit(1)
-
-    start, end = heap_range
-
-    heap_content = read_heap(pid, start, end)
-    if heap_content is None:
-        print("Error: Unable to read heap memory.")
-        sys.exit(1)
-
-    index = heap_content.find(search_string)
-    if index == -1:
-        print("Error: String not found in heap.")
-        sys.exit(1)
-
-    mutable_heap = bytearray(heap_content)
-    mutable_heap[index:index + len(search_string)] = replace_string
-    write_heap(pid, start, bytes(mutable_heap))
-    print("SUCCESS!")
 
 if __name__ == "__main__":
     main()
