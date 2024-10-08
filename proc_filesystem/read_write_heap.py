@@ -1,60 +1,46 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
-"""
-Module for reading and writing to the heap of a running process.
-This script finds a string in the heap and replaces it.
-"""
-
-import sys
 import os
-import re
+import sys
+import struct
 
 def print_usage():
-    """Print usage and exit."""
     print("Usage: read_write_heap.py pid search_string replace_string")
     sys.exit(1)
 
 def get_heap_memory(pid):
-    """Get heap start and end addresses from /proc/<pid>/maps."""
+    """Get the start and end addresses of the heap memory."""
     try:
-        with open(f"/proc/{pid}/maps", "r") as maps_file:
-            for line in maps_file:
-                if "[heap]" in line:  # Find heap section
-                    match = re.match(r"([0-9a-f]+)-([0-9a-f]+)", line)
-                    if match:
-                        return int(match.group(1), 16), int(match.group(2), 16)
+        with open(f"/proc/{pid}/maps", "r") as f:
+            for line in f:
+                if "[heap]" in line:
+                    parts = line.split()
+                    start = int(parts[0], 16)
+                    end = int(parts[1], 16)
+                    return start, end
     except FileNotFoundError:
-        print(f"Error: PID {pid} not found.")
-        sys.exit(1)
+        print(f"Process with PID {pid} does not exist.")
     return None
 
 def read_heap(pid, start, end):
-    """Read heap memory content from /proc/<pid>/mem."""
-    try:
-        with open(f"/proc/{pid}/mem", "rb") as mem_file:
-            mem_file.seek(start)  # Move to heap start
-            return bytearray(mem_file.read(end - start))  # Read heap
-    except PermissionError:
-        print("Error: Permission denied. Run as root or use sudo.")
-        sys.exit(1)
+    """Read the heap memory of the specified process."""
+    with open(f"/proc/{pid}/mem", "rb") as mem_file:
+        mem_file.seek(start)
+        return mem_file.read(end - start)
 
 def write_heap(pid, start, heap_content):
-    """Write modified heap content back to memory."""
-    try:
-        with open(f"/proc/{pid}/mem", "r+b") as mem_file:
-            mem_file.seek(start)  # Move to heap start
-            mem_file.write(heap_content)  # Write modified heap
-    except PermissionError:
-        print("Error: Permission denied. Run as root or use sudo.")
-        sys.exit(1)
+    """Write modified content back to the heap memory of the specified process."""
+    with open(f"/proc/{pid}/mem", "r+b") as mem_file:
+        mem_file.seek(start)
+        mem_file.write(heap_content)
 
 def main():
     if len(sys.argv) != 4:
         print_usage()
 
     pid = sys.argv[1]
-    search_string = sys.argv[2].encode()  # Convert to bytes
-    replace_string = sys.argv[3].encode()  # Convert to bytes
+    search_string = sys.argv[2].encode()  
+    replace_string = sys.argv[3].encode()  
 
     if len(search_string) != len(replace_string):
         print("Error: Strings must be the same length.")
@@ -77,10 +63,13 @@ def main():
     if index == -1:
         print(f"String '{search_string.decode()}' not found in heap.")
     else:
+        print("String found, replacing...")  # Debugging print
         heap_content[index:index + len(search_string)] = replace_string
         write_heap(pid, start, heap_content)
         print("SUCCESS!")  # Print only the success message
         return  # Ensure we exit after printing
+
+    print("Exiting main function")  # Debugging exit point
 
 if __name__ == "__main__":
     main()
