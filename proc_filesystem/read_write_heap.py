@@ -24,9 +24,9 @@ def get_heap_memory(pid):
                     end = int(address_range[1], 16)
                     return start, end
     except FileNotFoundError:
-        print(f"Process with PID {pid} does not exist.")
-    except Exception as e:
-        print(f"Error accessing /proc/{pid}/maps: {e}")
+        print(f"Error: Process with PID {pid} does not exist.")
+    except Exception:
+        print("Error: Unable to access heap memory.")
     return None
 
 def read_heap(pid, start, end):
@@ -35,9 +35,8 @@ def read_heap(pid, start, end):
         with open(f"/proc/{pid}/mem", "rb") as mem_file:
             mem_file.seek(start)
             return mem_file.read(end - start)
-    except Exception as e:
-        print(f"Error reading heap memory: {e}")
-    return None
+    except Exception:
+        return None
 
 def write_heap(pid, start, heap_content):
     """Write modified content back to the heap memory of the specified process."""
@@ -45,8 +44,8 @@ def write_heap(pid, start, heap_content):
         with open(f"/proc/{pid}/mem", "r+b") as mem_file:
             mem_file.seek(start)
             mem_file.write(heap_content)
-    except Exception as e:
-        print(f"Error writing to heap memory: {e}")
+    except Exception:
+        pass
 
 def main():
     if len(sys.argv) != 4:
@@ -65,15 +64,13 @@ def main():
         sys.exit(1)
 
     pid = int(pid)
-    print(f"Trying to access heap memory for PID: {pid}")
 
     heap_range = get_heap_memory(pid)
     if not heap_range:
-        print(f"Error: Heap not found for PID {pid}.")
+        print("Error: Heap not found.")
         sys.exit(1)
 
     start, end = heap_range
-    print(f"Heap range: {start} - {end}")
 
     heap_content = read_heap(pid, start, end)
     if heap_content is None:
@@ -82,16 +79,13 @@ def main():
 
     index = heap_content.find(search_string)
     if index == -1:
-        print(f"String '{search_string.decode()}' not found in heap.")
-    else:
-        print("String found, replacing...")
-        mutable_heap = bytearray(heap_content)
-        mutable_heap[index:index + len(search_string)] = replace_string
-        write_heap(pid, start, bytes(mutable_heap))
-        print("SUCCESS!")
-        return
+        print("Error: String not found in heap.")
+        sys.exit(1)
 
-    print("Exiting main function")
+    mutable_heap = bytearray(heap_content)
+    mutable_heap[index:index + len(search_string)] = replace_string
+    write_heap(pid, start, bytes(mutable_heap))
+    print("SUCCESS!")
 
 if __name__ == "__main__":
     main()
