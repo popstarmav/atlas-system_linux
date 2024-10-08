@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 """
 Module for reading and writing to the heap of a running process.
@@ -80,6 +80,7 @@ def main():
         heap_content[index:index + len(search_string)] = replace_string
         write_heap(pid, start, heap_content)
         print("SUCCESS!")  # Print only the success message
+        return  # Ensure we exit after printing
 
 if __name__ == "__main__":
     main()
