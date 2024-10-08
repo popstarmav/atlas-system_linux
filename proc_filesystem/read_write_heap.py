@@ -1,5 +1,10 @@
 #!/usr/bin/python3
 
+"""
+Module for reading and writing to the heap of a running process.
+This script finds a string in the heap and replaces it.
+"""
+
 import sys
 import os
 import re
