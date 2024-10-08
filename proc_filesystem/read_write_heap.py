@@ -1,100 +1,91 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
-import os
 import sys
+import os
 import re
 
-def usage_error():
+def print_usage():
+    """
+    Print usage and exit.
+    """
     print("Usage: read_write_heap.py pid search_string replace_string")
     sys.exit(1)
 
-def is_ascii(s):
-    return all(ord(c) < 128 for c in s)
-
-def get_heap_range(pid):
+def get_heap_memory(pid):
+    """
+    Get heap start and end addresses from /proc/<pid>/maps.
+    """
     try:
         with open(f"/proc/{pid}/maps", "r") as maps_file:
             for line in maps_file:
-                if "[heap]" in line:
-                    match = re.match(r"([0-9a-fA-F]+)-([0-9a-fA-F]+)", line)
+                if "[heap]" in line:  # Find heap section
+                    match = re.match(r"([0-9a-f]+)-([0-9a-f]+)", line)
                     if match:
-                        heap_start = int(match.group(1), 16)
-                        heap_end = int(match.group(2), 16)
-                        return heap_start, heap_end
+                        return int(match.group(1), 16), int(match.group(2), 16)
     except FileNotFoundError:
-        print(f"Error: Process {pid} not found.")
+        print(f"Error: PID {pid} not found.")
         sys.exit(1)
-    
-    print("Error: Heap region not found.")
-    sys.exit(1)
+    return None
 
-def read_memory(pid, address, length):
+def read_heap(pid, start, end):
+    """
+    Read heap memory content from /proc/<pid>/mem.
+    """
     try:
         with open(f"/proc/{pid}/mem", "rb") as mem_file:
-            mem_file.seek(address)
-            return mem_file.read(length)
-    except (FileNotFoundError, OSError):
-        print(f"Error: Failed to read memory of process {pid}.")
+            mem_file.seek(start)  # Move to heap start
+            return bytearray(mem_file.read(end - start))  # Read heap
+    except PermissionError:
+        print("Error: Permission denied. Run as root or use sudo.")
         sys.exit(1)
 
-def write_memory(pid, address, data):
+def write_heap(pid, start, heap_content):
+    """
+    Write modified heap content back to memory.
+    """
     try:
         with open(f"/proc/{pid}/mem", "r+b") as mem_file:
-            mem_file.seek(address)
-            mem_file.write(data)
-    except (FileNotFoundError, OSError):
-        print(f"Error: Failed to write memory of process {pid}.")
+            mem_file.seek(start)  # Move to heap start
+            mem_file.write(heap_content)  # Write modified heap
+    except PermissionError:
+        print("Error: Permission denied. Run as root or use sudo.")
         sys.exit(1)
-
-def search_and_replace_in_heap(pid, search_str, replace_str):
-    if len(search_str) != len(replace_str):
-        print("Error: Search and replace strings must be of equal length.")
-        sys.exit(1)
-
-    # Get heap range
-    heap_start, heap_end = get_heap_range(pid)
-    heap_size = heap_end - heap_start
-    print(f"Heap starts at: 0x{heap_start:x}, ends at: 0x{heap_end:x}, size: {heap_size} bytes")
-
-    # Read the heap memory
-    heap_data = read_memory(pid, heap_start, heap_size)
-
-    # Search for the string
-    offset = heap_data.find(search_str.encode('ascii'))
-    if offset == -1:
-        print(f"String '{search_str}' not found in heap.")
-        return
-
-    found_address = heap_start + offset
-    print(f"Found string at address: 0x{found_address:x}")
-
-    # Replace the string
-    modified_data = heap_data[:offset] + replace_str.encode('ascii') + heap_data[offset + len(replace_str):]
-    
-    # Write the modified memory back
-    write_memory(pid, heap_start, modified_data)
-    print(f"Replaced '{search_str}' with '{replace_str}' at address: 0x{found_address:x}")
 
 def main():
-    # Check arguments
     if len(sys.argv) != 4:
-        usage_error()
+        print_usage()
 
     pid = sys.argv[1]
-    search_str = sys.argv[2]
-    replace_str = sys.argv[3]
+    search_string = sys.argv[2].encode()  # Convert to bytes
+    replace_string = sys.argv[3].encode()  # Convert to bytes
 
-    # Validate inputs
+    if len(search_string) != len(replace_string):
+        print("Error: Strings must be the same length.")
+        sys.exit(1)
+
     if not pid.isdigit():
-        print(f"Error: Invalid PID '{pid}'.")
-        usage_error()
-    
-    if not is_ascii(search_str) or not is_ascii(replace_str):
-        print("Error: Strings must be ASCII.")
-        usage_error()
+        print("Error: Invalid PID.")
+        sys.exit(1)
 
-    # Perform the search and replace
-    search_and_replace_in_heap(int(pid), search_str, replace_str)
+    pid = int(pid)
+    heap_range = get_heap_memory(pid)
+    if not heap_range:
+        print(f"Error: Heap not found for PID {pid}.")
+        sys.exit(1)
+
+    start, end = heap_range
+    print(f"Heap starts at: 0x{start:x}, ends at: 0x{end:x}, size: {end - start} bytes")
+
+    heap_content = read_heap(pid, start, end)
+
+    index = heap_content.find(search_string)
+    if index == -1:
+        print(f"String '{search_string.decode()}' not found in heap.")
+    else:
+        print(f"Found string at address: 0x{start + index:x}")
+        heap_content[index:index + len(search_string)] = replace_string
+        write_heap(pid, start, heap_content)
+        print(f"Replaced '{search_string.decode()}' with '{replace_string.decode()}' at address: 0x{start + index:x}")
 
 if __name__ == "__main__":
     main()
