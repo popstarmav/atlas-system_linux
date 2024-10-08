@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 """
 Module for reading and writing to the heap of a running process.
@@ -10,16 +10,12 @@ import os
 import re
 
 def print_usage():
-    """
-    Print usage and exit.
-    """
+    """Print usage and exit."""
     print("Usage: read_write_heap.py pid search_string replace_string")
     sys.exit(1)
 
 def get_heap_memory(pid):
-    """
-    Get heap start and end addresses from /proc/<pid>/maps.
-    """
+    """Get heap start and end addresses from /proc/<pid>/maps."""
     try:
         with open(f"/proc/{pid}/maps", "r") as maps_file:
             for line in maps_file:
@@ -33,9 +29,7 @@ def get_heap_memory(pid):
     return None
 
 def read_heap(pid, start, end):
-    """
-    Read heap memory content from /proc/<pid>/mem.
-    """
+    """Read heap memory content from /proc/<pid>/mem."""
     try:
         with open(f"/proc/{pid}/mem", "rb") as mem_file:
             mem_file.seek(start)  # Move to heap start
@@ -45,9 +39,7 @@ def read_heap(pid, start, end):
         sys.exit(1)
 
 def write_heap(pid, start, heap_content):
-    """
-    Write modified heap content back to memory.
-    """
+    """Write modified heap content back to memory."""
     try:
         with open(f"/proc/{pid}/mem", "r+b") as mem_file:
             mem_file.seek(start)  # Move to heap start
@@ -79,18 +71,15 @@ def main():
         sys.exit(1)
 
     start, end = heap_range
-    print(f"Heap starts at: 0x{start:x}, ends at: 0x{end:x}, size: {end - start} bytes")
-
     heap_content = read_heap(pid, start, end)
 
     index = heap_content.find(search_string)
     if index == -1:
         print(f"String '{search_string.decode()}' not found in heap.")
     else:
-        print(f"Found string at address: 0x{start + index:x}")
         heap_content[index:index + len(search_string)] = replace_string
         write_heap(pid, start, heap_content)
-        print(f"Replaced '{search_string.decode()}' with '{replace_string.decode()}' at address: 0x{start + index:x}")
+        print("SUCCESS!")  # Print only the success message
 
 if __name__ == "__main__":
     main()
