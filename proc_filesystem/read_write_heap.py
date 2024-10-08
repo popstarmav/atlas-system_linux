@@ -25,9 +25,8 @@ def update_mem_file(pid, search_string, replace_string, heap_start, heap_stop):
         if string_offset > -1:
             f.seek(heap_start + string_offset)
             f.write(replace_string.encode())
-            print("SUCCESS!")
-            return
-    exit(1)
+            return True  # Indicate success
+    return False  # Indicate failure
 
 if __name__ == "__main__":
     if len(argv) != 4 or len(argv[2]) != len(argv[3]):
@@ -35,5 +34,6 @@ if __name__ == "__main__":
         exit(1)
 
     heap_start, heap_stop = parse_maps_file(int(argv[1]))
-    update_mem_file(int(argv[1]), argv[2], argv[3], heap_start, heap_stop)
+    if update_mem_file(int(argv[1]), argv[2], argv[3], heap_start, heap_stop):
+        print("SUCCESS!")
 
