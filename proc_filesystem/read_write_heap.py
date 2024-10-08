@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 """Finds & overwrites a string in a process' memory file"""
 
 import sys
