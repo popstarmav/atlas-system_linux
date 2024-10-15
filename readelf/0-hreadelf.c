@@ -2,122 +2,103 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
 #include <elf.h>
+#include <string.h>
+#include <errno.h>
+
+#define ERR_NOT_ELF "Error: Not a valid ELF file\n"
 
 /**
- * print_elf_header - prints the ELF header information.
- * @header: pointer to the ELF header structure.
+ * check_elf - checks if a file is a valid ELF file
+ * @e_ident: pointer to the ELF identification array
+ * Return: 0 if valid, -1 if not
+ */
+int check_elf(unsigned char *e_ident)
+{
+	if (e_ident[EI_MAG0] != ELFMAG0 || e_ident[EI_MAG1] != ELFMAG1 ||
+	    e_ident[EI_MAG2] != ELFMAG2 || e_ident[EI_MAG3] != ELFMAG3)
+		return (-1); /* Not a valid ELF file */
+	return (0);
+}
+
+/**
+ * open_file - opens a file and returns its file descriptor
+ * @filename: path to the file
+ * Return: file descriptor on success, -1 on failure
+ */
+int open_file(const char *filename)
+{
+	int fd = open(filename, O_RDONLY);
+
+	if (fd == -1)
+	{
+		fprintf(stderr, "Error: Cannot open file %s: %s\n",
+			filename, strerror(errno));
+		return (-1);
+	}
+	return (fd);
+}
+
+/**
+ * print_elf_header - prints the ELF header information
+ * @header: pointer to ELF header
  */
 void print_elf_header(Elf64_Ehdr *header)
 {
-	int i;
-
 	printf("ELF Header:\n");
-	printf("  Magic:   ");
-	for (i = 0; i < EI_NIDENT; i++)
-		printf("%02x ", header->e_ident[i]);
-	printf("\n");
+	printf("  Magic:   %02x %02x %02x %02x\n",
+		header->e_ident[EI_MAG0], header->e_ident[EI_MAG1],
+		header->e_ident[EI_MAG2], header->e_ident[EI_MAG3]);
 	printf("  Class:                             %s\n",
-		header->e_ident[EI_CLASS] == ELFCLASS64 ? "ELF64" : "Unknown");
+		header->e_ident[EI_CLASS] == ELFCLASS64 ? "ELF64" : "ELF32");
 	printf("  Data:                              %s\n",
 		header->e_ident[EI_DATA] == ELFDATA2LSB ?
-		"2's complement, little endian" : "Unknown");
-	printf("  Version:                           %d (current)\n",
-		header->e_ident[EI_VERSION]);
+		"2's complement, little endian" : "Big endian");
+	printf("  Version:                           0x%x\n",
+		header->e_version);  /* Use %x for unsigned int */
 	printf("  OS/ABI:                            %d\n",
 		header->e_ident[EI_OSABI]);
-	printf("  ABI Version:                       %d\n",
-		header->e_ident[EI_ABIVERSION]);
 	printf("  Type:                              %d\n",
 		header->e_type);
 	printf("  Machine:                           %d\n",
 		header->e_machine);
-	printf("  Version:                           0x%x\n",
-		header->e_version);
 	printf("  Entry point address:               0x%lx\n",
-		header->e_entry);
-	printf("  Start of program headers:          %ld (bytes into file)\n",
-		header->e_phoff);
-	printf("  Start of section headers:          %ld (bytes into file)\n",
-		header->e_shoff);
-	printf("  Flags:                             0x%x\n",
-		header->e_flags);
-	printf("  Size of this header:               %d (bytes)\n",
-		header->e_ehsize);
-	printf("  Size of program headers:           %d (bytes)\n",
-		header->e_phentsize);
-	printf("  Number of program headers:         %d\n",
-		header->e_phnum);
-	printf("  Size of section headers:           %d (bytes)\n",
-		header->e_shentsize);
-	printf("  Number of section headers:         %d\n",
-		header->e_shnum);
-	printf("  Section header string table index: %d\n",
-		header->e_shstrndx);
+		header->e_entry);  /* Keep %lx here since e_entry is long */
 }
 
 /**
- * main - main function to display ELF file header.
- * @argc: number of command line arguments.
- * @argv: array of command line arguments.
- *
- * Return: 0 on success, or exit with a failure status.
+ * main - entry point
+ * @argc: argument count
+ * @argv: argument vector
+ * Return: 0 on success, 1 on failure
  */
 int main(int argc, char **argv)
 {
-	const char *filename;
 	int fd;
-	struct stat st;
-	void *map;
-	Elf64_Ehdr *header;
+	ssize_t r;
+	Elf64_Ehdr elf_header;
 
 	if (argc != 2)
 	{
-		fprintf(stderr, "Usage: %s elf_filename\n", argv[0]);
-		exit(EXIT_FAILURE);
+		fprintf(stderr, "Usage: %s <elf_file>\n", argv[0]);
+		return (EXIT_FAILURE);
 	}
 
-	filename = argv[1];
-	fd = open(filename, O_RDONLY);
+	fd = open_file(argv[1]);
 	if (fd == -1)
-	{
-		perror("Error opening file");
-		exit(EXIT_FAILURE);
-	}
+		return (EXIT_FAILURE);
 
-	if (fstat(fd, &st) == -1)
+	r = read(fd, &elf_header, sizeof(Elf64_Ehdr));
+	if (r != sizeof(Elf64_Ehdr) || check_elf(elf_header.e_ident))
 	{
-		perror("Error getting file size");
+		fprintf(stderr, ERR_NOT_ELF);
 		close(fd);
-		exit(EXIT_FAILURE);
+		return (EXIT_FAILURE);
 	}
 
-	map = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-	if (map == MAP_FAILED)
-	{
-		perror("Error mapping file");
-		close(fd);
-		exit(EXIT_FAILURE);
-	}
-
-	header = (Elf64_Ehdr *)map;
-	if (header->e_ident[EI_MAG0] != ELFMAG0 ||
-	    header->e_ident[EI_MAG1] != ELFMAG1 ||
-	    header->e_ident[EI_MAG2] != ELFMAG2 ||
-	    header->e_ident[EI_MAG3] != ELFMAG3)
-	{
-		fprintf(stderr, "Not an ELF file\n");
-		munmap(map, st.st_size);
-		close(fd);
-		exit(EXIT_FAILURE);
-	}
-
-	print_elf_header(header);
-
-	munmap(map, st.st_size);
+	print_elf_header(&elf_header);
 	close(fd);
 
-	return (0);
+	return (EXIT_SUCCESS);
 }
+
