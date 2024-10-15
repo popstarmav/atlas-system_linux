@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "hreadelf.h"
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
