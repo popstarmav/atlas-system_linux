@@ -9,19 +9,19 @@ asm_strcmp:
     mov bl, byte [rsi]         ; Load byte from s2
 
     test al, al                ; Check if *s1 is null
-    jz .end_of_strings 
+    jz .end_of_strings
     test bl, bl                ; Check if *s2 is null
     jz .end_of_strings
 
     cmp al, bl
     jne .not_equal
 
-    inc rdi             
+    inc rdi
     inc rsi
     jmp .compare_loop
 
 .end_of_strings:
-    cmp al, bl          
+    cmp al, bl
     je .return_equal
 
 .not_equal:
