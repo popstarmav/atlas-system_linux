@@ -9,53 +9,49 @@ asm_strstr:
     push    rbp
     mov     rbp, rsp
 
-    ; Move parameters to registers
-    mov     rdi, rdi            ; haystack in rdi
-    mov     rsi, rsi            ; needle in rsi
-
+    ; Parameters: rdi = haystack, rsi = needle
     ; Check if needle is empty
-    mov     rax, rsi
-    movzx   rcx, byte [rsi]
-    test    rcx, rcx
-    je      .found_empty_needle ; If empty, return haystack
+    movzx   rcx, byte [rsi]      ; Load first byte of needle into rcx
+    test    rcx, rcx             ; Check if needle is empty
+    je      .return_haystack     ; If empty, return haystack
 
-    ; Loop through haystack
+    ; Outer loop: iterate through haystack
 .loop_haystack:
-    mov     rax, rdi            ; Current position in haystack
-    mov     rbx, rsi            ; Reset needle pointer
+    mov     rax, rdi             ; Set current position in haystack to rax
+    mov     rbx, rsi             ; Reset needle pointer to start
 
-    ; Inner loop to compare haystack and needle characters
-    .compare_chars:
-        movzx   rcx, byte [rax] ; Load haystack character
-        movzx   rdx, byte [rbx] ; Load needle character
-        cmp     cl, dl          ; Compare characters
-        jne     .next_char      ; If different, check next char in haystack
-        test    cl, cl          ; Check if at end of needle
-        je      .found_needle   ; If needle ends, match is found
-        inc     rax             ; Move to next character in haystack
-        inc     rbx             ; Move to next character in needle
-        jmp     .compare_chars  ; Continue comparing
+    ; Inner loop: compare characters between haystack and needle
+.compare_chars:
+    movzx   rcx, byte [rax]      ; Load haystack character into rcx
+    movzx   rdx, byte [rbx]      ; Load needle character into rdx
+    cmp     cl, dl               ; Compare characters in haystack and needle
+    jne     .next_char           ; If mismatch, go to next char in haystack
+    test    dl, dl               ; Check if at end of needle
+    je      .match_found         ; If yes, needle found at this position
+    inc     rax                  ; Move to next haystack char
+    inc     rbx                  ; Move to next needle char
+    jmp     .compare_chars       ; Continue inner comparison loop
 
-    ; Move to the next character in haystack and loop
+    ; Advance haystack pointer to next character and repeat outer loop
 .next_char:
-    movzx   rcx, byte [rdi]
-    test    cl, cl              ; Check if end of haystack
-    je      .not_found          ; If end, needle not found
-    inc     rdi                 ; Move to next char in haystack
-    jmp     .loop_haystack      ; Restart outer loop
+    movzx   rcx, byte [rdi]      ; Check if end of haystack
+    test    cl, cl
+    je      .no_match            ; If end of haystack, return NULL
+    inc     rdi                  ; Move to next haystack char
+    jmp     .loop_haystack       ; Restart outer loop
 
-.found_empty_needle:
-    mov     rax, rdi            ; Return haystack if needle is empty
-    jmp     .end
+.return_haystack:
+    mov     rax, rdi             ; Return haystack as needle is empty
+    jmp     .exit
 
-.found_needle:
-    mov     rax, rdi            ; Match found, set return to haystack position
-    jmp     .end
+.match_found:
+    mov     rax, rdi             ; Needle found, return starting position
+    jmp     .exit
 
-.not_found:
-    xor     rax, rax            ; Return NULL if needle not found
+.no_match:
+    xor     rax, rax             ; No match, return NULL
 
-.end:
+.exit:
     ; Epilogue
     pop     rbp
     ret
