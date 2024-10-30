@@ -1,23 +1,23 @@
 BITS 64
 
-global asm_putc               ; Export the asm_putc function
+global asm_putc			; export `asm_putc` function
 section .text
 
-; size_t asm_putc(int c);
+	;; size_t asm_putc(int c)
+	;; {
+	;;         return (write(1, &c, 1));
+	;; }
+
 asm_putc:
-    push    rbp              ; Save the base pointer
-    mov     rbp, rsp         ; Set up the stack frame
-    
-    mov     rax, 1           ; syscall number for sys_write
-    mov     rdi, 1           ; file descriptor 1 (stdout)
-    mov     rsi, rsp         ; Use stack as the buffer
-    mov     byte [rsi], al   ; Store the character (in `al`) at the top of the stack
-    mov     rdx, 1           ; Number of bytes to write
-
-    syscall                   ; Invoke the syscall
-
-    mov     rax, 1           ; Return value: number of bytes written (1)
-    
-    pop     rbp              ; Restore the base pointer
-    ret                       ; Return from the function
-
+	push    rbp			; prologue
+	mov     rbp, rsp		;
+	sub     rsp, 16			; reserve 16 bytes on stack
+	mov     DWORD [rbp - 4], edi	; store destination index in c
+	lea     rax, [rbp - 4]		; store address of c in rax
+	mov     edx, 1			; write param 2: 1 byte
+	mov     rsi, rax		; write param 1: &c into source index
+	mov     edi, 1			; write param 0: 1 for stdout fd
+	mov	eax, 1			; write syscall code == 1
+	syscall				; call write
+	leave				; return from write call
+	ret
