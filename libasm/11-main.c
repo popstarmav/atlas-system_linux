@@ -19,13 +19,13 @@
  */
 int main(void)
 {
-    assert(strspn(S2, A1) == asm_strspn(S2, A1));
-    assert(strspn(S2, A2) == asm_strspn(S2, A2));
-    assert(strspn(S3, A1) == asm_strspn(S3, A1));
-    assert(strspn(S3, A2) == asm_strspn(S3, A2));
-    assert(strspn(S1, A1) == asm_strspn(S1, A1));
-    assert(strspn(S1, A2) == asm_strspn(S1, A2));
-    assert(strspn(S1, A1 A2) == asm_strspn(S1, A1 A2));
+    assert(strcspn(S2, A1) == asm_strcspn(S2, A1));
+    assert(strcspn(S2, A2) == asm_strcspn(S2, A2));
+    assert(strcspn(S3, A1) == asm_strcspn(S3, A1));
+    assert(strcspn(S3, A2) == asm_strcspn(S3, A2));
+    assert(strcspn(S1, A1) == asm_strcspn(S1, A1));
+    assert(strcspn(S1, A2) == asm_strcspn(S1, A2));
+    assert(strcspn(S1, A1 A2) == asm_strcspn(S1, A1 A2));
 
     printf("All good!\n");
     return (EXIT_SUCCESS);
