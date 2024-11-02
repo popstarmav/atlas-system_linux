@@ -27,4 +27,8 @@ int main(void)
 
     printf("All good!\n");
     return (EXIT_SUCCESS);
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> d79af5e41f4d6d076642b3f8ae180245e95a107c

@@ -62,4 +62,8 @@ asm_strncasecmp:
 
 .return_difference:
     sub eax, ecx               ; Return difference (s1 - s2)
+<<<<<<< HEAD
     ret
+=======
+    ret
+>>>>>>> d79af5e41f4d6d076642b3f8ae180245e95a107c
