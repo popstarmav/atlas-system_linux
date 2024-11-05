@@ -22,7 +22,7 @@ void sigint_handler(int signum)
  * Sets sigint_handler as the handler for SIGINT.
  * If setting the handler fails,
  * it returns -1; otherwise, it returns 0.
- */i
+ */
 int handle_signal(void)
 {
 	if (signal(SIGINT, sigint_handler) == SIG_ERR)
