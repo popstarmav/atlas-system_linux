@@ -2,8 +2,10 @@
 #include <signal.h>
 
 /**
- * sigint_handler - Prints a message when SIGINT (Ctrl+C) is recived
- * @signnum: the signal number
+ * sigint_handler - Handles the SIGINT signal (e.g., when Control-C is pressed)
+ * @signum: The signal number received (should be SIGINT)
+ *
+ * Prints a message indicating that the SIGINT signal was caught.
  */
 void sigint_handler(int signum)
 {
@@ -11,11 +13,16 @@ void sigint_handler(int signum)
 	fflush(stdout);
 }
 
+
 /**
- * handle_signal - Sets sigint_handler to handle SIGINT (CTRL+C)
+ * handle_signal - Sets up the SIGINT signal handler
  *
- * Return: 0 on success, -1 on failure
- */
+ * Return: 0 on success, or -1 if an error occurred
+ *
+ * Sets sigint_handler as the handler for SIGINT.
+ * If setting the handler fails,
+ * it returns -1; otherwise, it returns 0.
+ */i
 int handle_signal(void)
 {
 	if (signal(SIGINT, sigint_handler) == SIG_ERR)
