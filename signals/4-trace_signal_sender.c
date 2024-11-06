@@ -11,9 +11,10 @@ int trace_signal_sender(void);
  */
 void sigquit_handler(int signum)
 {
-    (void)signum;  // Explicitly mark 'signum' as unused
-    pid_t sender_pid = getpid();
-    printf("SIGQUIT sent by %d\n", sender_pid);
+	(void)signum;
+	pid_t sender_pid = getpid();
+
+	printf("SIGQUIT sent by %d\n", sender_pid);
 }
 
 /**
@@ -23,17 +24,17 @@ void sigquit_handler(int signum)
  */
 int trace_signal_sender(void)
 {
-    struct sigaction sa;
+	struct sigaction sa;
 
-    sa.sa_handler = sigquit_handler;
-    sa.sa_flags = 0;
-    sigemptyset(&sa.sa_mask);
+	sa.sa_handler = sigquit_handler;
+	sa.sa_flags = 0;
+	sigemptyset(&sa.sa_mask);
 
-    if (sigaction(SIGQUIT, &sa, NULL) == -1)
-    {
-        return -1;  // Error setting the handler
-    }
+	if (sigaction(SIGQUIT, &sa, NULL) == -1)
+	{
+		return (-1);
+	}
 
-    return 0;  // Successfully set the handler
+	return (0);
 }
 
