@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
     }
 
     const char *signal_description = strsignal(signum);  // Use strsignal here
-    printf("Signal %d: %s\n", signum, signal_description);
+    printf("%d: %s\n", signum, signal_description);
 
     return EXIT_SUCCESS;
 }
