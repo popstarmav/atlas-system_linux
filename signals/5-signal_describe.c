@@ -1,28 +1,35 @@
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>  // Correct header for strsignal
 #include <signal.h>
 
-/**
- * main - Prints description of a signal given by signum
- * @argc: Argument count
- * @argv: Argument vector
- * Return: EXIT_SUCCESS on success, EXIT_FAILURE on error
- */
 int main(int argc, char *argv[])
 {
-    int signum;
     if (argc != 2)
     {
-        fprintf(stderr, "Usage: %s <signum>\n", argv[0]);
+        printf("Usage: %s <signum>\n", argv[0]);
         return (EXIT_FAILURE);
     }
-    signum = atoi(argv[1]);
+
+    int signum = atoi(argv[1]);
     if (signum < 1 || signum >= NSIG)
     {
-        fprintf(stderr, "Invalid signal number: %d\n", signum);
+        printf("Invalid signal number\n");
         return (EXIT_FAILURE);
     }
-    printf("Signal %d: %s\n", signum, sys_siglist[signum]);
+
+    // Ensure strsignal() is available by including <string.h>
+    const char *signal_description = strsignal(signum);
+    
+    if (signal_description != NULL)
+    {
+        printf("Signal %d: %s\n", signum, signal_description);
+    }
+    else
+    {
+        printf("Signal %d: Unknown signal\n", signum);
+    }
+
     return (EXIT_SUCCESS);
 }
 
