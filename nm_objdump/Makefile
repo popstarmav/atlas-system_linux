@@ -1,21 +1,18 @@
 CC = gcc
 CFLAGS = -Wall -Werror -g
-TARGET = hnm
+LDFLAGS = -lelf  # Add the libelf library here
 
-SRCS = hnm_elf_files.c
-OBJS = $(SRCS:.c=.o)
+OBJS = hnm_elf_files.o
+TARGET = hnm
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS)
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS)
 
-# Compile each .c file to .o
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -f $(OBJS) $(TARGET)
-
-.PHONY: all clean
 
