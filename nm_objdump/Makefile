@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Werror -g
-LDFLAGS = -lelf  # Add the libelf library here
+LDFLAGS = -L/usr/lib/x86_64-linux-gnu -lelf
 
 OBJS = hnm_elf_files.o
 TARGET = hnm
