@@ -1,18 +1,21 @@
+# Makefile
+
 CC = gcc
 CFLAGS = -Wall -Werror -g
 LDFLAGS = -L/usr/lib/x86_64-linux-gnu -lelf
 
-OBJS = hnm_elf_files.o
 TARGET = hnm
+SRC = hnm.c
+OBJ = $(SRC:.c=.o)
 
-all: $(TARGET)
+$(TARGET): $(OBJ)
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJ) $(LDFLAGS)
 
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS)
-
-%.o: %.c
+%.o: %.c hnm.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJ) $(TARGET)
+
+.PHONY: clean
 
