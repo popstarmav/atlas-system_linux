@@ -1,4 +1,7 @@
 #include <signal.h>
-#include <unistd.h>  // for pid_t and kill
+#include <unistd.h>
 
-int pid_exist(pid_t pid) { return (kill(pid, 0) == 0); }
+int pid_exist(pid_t pid)
+{
+	return (kill(pid, 0) == 0);
+}
