@@ -1,2 +1,2 @@
 #!/bin/sh
-trap 'echo Nope' SIGABRT SIGTERM SIGIO
+trap 'echo Nope' ABRT TO TERM
