@@ -1,2 +1,2 @@
 #!/bin/sh
-trap "echo Nope" ABRT SIGIO TERM
+trap "echo Nope" ABRT SIGPOLL TERM
