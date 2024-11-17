@@ -33,7 +33,7 @@ void display_symbols(const char *filename) {
             fprintf(stderr, "Failed to get section header.\n");
             exit(EXIT_FAILURE);
         }
-        
+
         if (shdr.sh_type == SHT_SYMTAB) {
             Elf_Data *data = elf_getdata(scn, NULL);
             int symbol_count = shdr.sh_size / shdr.sh_entsize;
@@ -74,4 +74,3 @@ int main(int argc, char **argv) {
 
     return EXIT_SUCCESS;
 }
-
