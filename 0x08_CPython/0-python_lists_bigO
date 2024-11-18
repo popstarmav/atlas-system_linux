@@ -1,0 +1,36 @@
+L1 - Assigning. Example: holberton[98] = 402
+Big O Notation: O(1)
+
+L2 - Appending. Example: holberton.append(98)
+Big O Notation: O(1) (amortized)
+
+L3 - Concatenating a list of n elements. Example: holberton + [98, 402]
+Big O Notation: O(k), where k is the size of the new list.
+
+L4 - Inserting an item at a given position. Example: holberton.insert(98, 402)
+Big O Notation: O(n)
+
+L5 - Removing an element. Example: holberton.remove(98)
+Big O Notation: O(n)
+
+L6 - Removing and returning the last item in the list. Example: holberton.pop()
+Big O Notation: O(1)
+
+L7 - Poping an element at a given position. Example: holberton.pop(98)
+Big O Notation: O(n)
+
+L8 - Clearing a list. Example: holberton.clear()
+Big O Notation: O(n)
+
+L9 - Counting the list. Example: holberton.count()
+Big O Notation: O(n)
+
+L10 - Sorting the list. Example: holberton.sort()
+Big O Notation: O(n log n)
+
+L11 - Reversing the list. Example: holberton.reverse()
+Big O Notation: O(n)
+
+L12 - Deleting the list. Example: del holberton
+Big O Notation: O(1)
+
