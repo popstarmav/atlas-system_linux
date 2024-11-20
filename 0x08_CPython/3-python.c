@@ -12,7 +12,7 @@ void print_python_list(PyObject *p) {
         return;
     }
 
-    Py_ssize_t size = PyList_Size(p);
+    Py_ssize_t size = ((PyVarObject *)p)->ob_size;
     Py_ssize_t allocated = ((PyListObject *)p)->allocated;
 
     printf("[*] Python list info\n");
@@ -20,7 +20,7 @@ void print_python_list(PyObject *p) {
     printf("[*] Allocated = %zd\n", allocated);
 
     for (Py_ssize_t i = 0; i < size; i++) {
-        PyObject *item = PyList_GetItem(p, i); // Safe to use as it doesn't violate the rules
+        PyObject *item = ((PyListObject *)p)->ob_item[i];
         printf("Element %zd: %s\n", i, item->ob_type->tp_name);
 
         if (PyBytes_Check(item)) {
@@ -38,14 +38,14 @@ void print_python_bytes(PyObject *p) {
         return;
     }
 
-    Py_ssize_t size = PyBytes_Size(p);
-    char *string = PyBytes_AsString(p);
+    Py_ssize_t size = ((PyBytesObject *)p)->ob_base.ob_size;
+    char *string = ((PyBytesObject *)p)->ob_sval;
 
     printf("[.] bytes object info\n");
     printf("  size: %zd\n", size);
     printf("  trying string: %s\n", string);
-
     printf("  first %zd bytes:", size < 10 ? size + 1 : 10);
+
     for (Py_ssize_t i = 0; i < size && i < 10; i++) {
         printf(" %02x", (unsigned char)string[i]);
     }
@@ -59,7 +59,8 @@ void print_python_float(PyObject *p) {
         return;
     }
 
-    double value = PyFloat_AsDouble(p); // Safe alternative
+    double value = ((PyFloatObject *)p)->ob_fval;
+
     printf("[.] float object info\n");
     printf("  value: %.16g\n", value);
 }
