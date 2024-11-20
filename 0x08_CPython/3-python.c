@@ -2,6 +2,7 @@
 #include <Python.h>
 #include <stdio.h>
 
+
 void print_python_list(PyObject *p);
 void print_python_bytes(PyObject *p);
 void print_python_float(PyObject *p);
@@ -21,6 +22,7 @@ void print_python_list(PyObject *p) {
 
     for (Py_ssize_t i = 0; i < size; i++) {
         PyObject *item = ((PyListObject *)p)->ob_item[i];
+
         printf("Element %zd: %s\n", i, item->ob_type->tp_name);
 
         if (PyBytes_Check(item)) {
@@ -38,7 +40,8 @@ void print_python_bytes(PyObject *p) {
         return;
     }
 
-    Py_ssize_t size = ((PyBytesObject *)p)->ob_base.ob_size;
+    Py_ssize_t size = ((PyVarObject *)p)->ob_size;
+
     char *string = ((PyBytesObject *)p)->ob_sval;
 
     printf("[.] bytes object info\n");
@@ -49,6 +52,12 @@ void print_python_bytes(PyObject *p) {
     for (Py_ssize_t i = 0; i < size && i < 10; i++) {
         printf(" %02x", (unsigned char)string[i]);
     }
+
+
+    if (size < 10) {
+        printf(" %02x", 0);
+    }
+
     printf("\n");
 }
 
@@ -59,8 +68,7 @@ void print_python_float(PyObject *p) {
         return;
     }
 
-    double value = ((PyFloatObject *)p)->ob_fval;
-
+    double value = PyFloat_AsDouble(p);
     printf("[.] float object info\n");
     printf("  value: %.16g\n", value);
 }
