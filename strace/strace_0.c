@@ -5,14 +5,13 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sys/user.h>
-#include <sys/reg.h>
 #include <errno.h>
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     pid_t child;
     int status;
     struct user_regs_struct regs;
+    int in_syscall = 0; // Track syscall entry/exit
 
     if (argc < 2) {
         fprintf(stderr, "Usage: %s command [args...]\n", argv[0]);
@@ -41,19 +40,29 @@ int main(int argc, char *argv[])
                 perror("waitpid");
                 return 1;
             }
+
             if (WIFEXITED(status)) {
                 break;
             }
 
-            /* Retrieve the system call number */
-            if (ptrace(PTRACE_GETREGS, child, NULL, &regs) == -1) {
-                perror("ptrace(PTRACE_GETREGS)");
-                return 1;
+            if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
+                /* Get the syscall number */
+                if (ptrace(PTRACE_GETREGS, child, NULL, &regs) == -1) {
+                    perror("ptrace(PTRACE_GETREGS)");
+                    return 1;
+                }
+
+                if (!in_syscall) {
+                    /* Entering syscall */
+                    printf("%lld\n", (long long)regs.orig_rax);
+                    in_syscall = 1; // Mark entry
+                } else {
+                    /* Exiting syscall */
+                    in_syscall = 0; // Mark exit
+                }
             }
 
-            printf("%lld\n", (long long)regs.orig_rax);
-
-            /* Continue to the next system call */
+            /* Move to the next syscall */
             if (ptrace(PTRACE_SYSCALL, child, NULL, NULL) == -1) {
                 perror("ptrace(PTRACE_SYSCALL)");
                 return 1;
@@ -63,4 +72,3 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-
