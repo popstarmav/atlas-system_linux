@@ -5,70 +5,42 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sys/user.h>
-#include <errno.h>
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     pid_t child;
     int status;
     struct user_regs_struct regs;
-    int in_syscall = 0; // Track syscall entry/exit
 
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s command [args...]\n", argv[0]);
+        printf("Usage: %s command [args...]\n", argv[0]);
         return 1;
     }
 
     child = fork();
-    if (child == -1) {
-        perror("fork");
-        return 1;
-    }
-
     if (child == 0) {
-        /* Child process: request to be traced and execute the command */
-        if (ptrace(PTRACE_TRACEME, 0, NULL, NULL) == -1) {
-            perror("ptrace(PTRACE_TRACEME)");
-            exit(1);
-        }
+        ptrace(PTRACE_TRACEME, 0, NULL, NULL);
         execv(argv[1], argv + 1);
-        perror("execv");
         exit(1);
-    } else {
-        /* Parent process: trace the child process */
-        while (1) {
-            if (waitpid(child, &status, 0) == -1) {
-                perror("waitpid");
-                return 1;
-            }
-
-            if (WIFEXITED(status)) {
-                break;
-            }
-
-            if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
-                /* Get the syscall number */
-                if (ptrace(PTRACE_GETREGS, child, NULL, &regs) == -1) {
-                    perror("ptrace(PTRACE_GETREGS)");
-                    return 1;
-                }
-
-                if (!in_syscall) {
-                    /* Entering syscall */
-                    printf("%lld\n", (long long)regs.orig_rax);
-                    in_syscall = 1; // Mark entry
-                } else {
-                    /* Exiting syscall */
-                    in_syscall = 0; // Mark exit
-                }
-            }
-
-            /* Move to the next syscall */
-            if (ptrace(PTRACE_SYSCALL, child, NULL, NULL) == -1) {
-                perror("ptrace(PTRACE_SYSCALL)");
-                return 1;
-            }
-        }
     }
 
+    wait(&status);
+    while (1) {
+        ptrace(PTRACE_SYSCALL, child, NULL, NULL);
+        wait(&status);
+        
+        if (WIFEXITED(status))
+            break;
+            
+        ptrace(PTRACE_GETREGS, child, NULL, &regs);
+        printf("%lld\n", (long long)regs.orig_rax);
+        
+        ptrace(PTRACE_SYSCALL, child, NULL, NULL);
+        wait(&status);
+        
+        if (WIFEXITED(status))
+            break;
+    }
     return 0;
 }
+
