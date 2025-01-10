@@ -6,45 +6,51 @@
 #include <unistd.h>
 #include <cstdlib>
 
+/**
+ * Program to trace system calls made by a given command.
+ * Usage: ./strace_0 command [args...]
+ */
 int main(int argc, char *argv[]) {
-    pid_t child;                   // Child process ID
-    int status;                    // Status variable for wait()
+    pid_t child;                   // Process ID of the child
+    int status;                    // Status for wait()
     struct user_regs_struct regs;  // Structure to store registers
 
-    // Check for valid input
+    // Ensure the program is called with at least one argument
     if (argc < 2) {
         std::cerr << "Usage: " << argv[0] << " command [args...]" << std::endl;
         return 1;
     }
 
-    // Fork the process
-    child = fork();
+    child = fork(); // Fork the process
     if (child == 0) {
-        // Child process
-        ptrace(PTRACE_TRACEME, 0, nullptr, nullptr); // Enable tracing
-        execv(argv[1], argv + 1);                   // Execute the command
-        perror("execv");                            // If execv fails
-        exit(1);
+        // Child process: Enable tracing and execute the given command
+        ptrace(PTRACE_TRACEME, 0, nullptr, nullptr);
+        execv(argv[1], argv + 1);
+        std::perror("execv"); // If execv fails, print an error
+        std::exit(1);
     } else if (child > 0) {
-        // Parent process
+        // Parent process: Trace the child process
         while (true) {
             // Wait for child state change
             wait(&status);
-            if (WIFEXITED(status)) break; // Exit loop if the child process exits
 
-            // Fetch the system call number
+            // Break if the child process exits
+            if (WIFEXITED(status)) {
+                break;
+            }
+
+            // Get the syscall number (orig_rax) from the child process
             ptrace(PTRACE_GETREGS, child, nullptr, &regs);
             std::cout << regs.orig_rax << std::endl;
 
-            // Move to the next syscall
+            // Continue to the next syscall entry
             ptrace(PTRACE_SYSCALL, child, nullptr, nullptr);
         }
     } else {
         // Fork failed
-        perror("fork");
+        std::perror("fork");
         return 1;
     }
 
     return 0;
 }
-
