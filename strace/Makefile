@@ -1,10 +1,22 @@
-CC = gcc
-CFLAGS = -Wall -Werror -Wextra -pedantic
+# Compiler and Flags
+CXX = g++
+CXXFLAGS = -Wall -Werror -Wextra -pedantic
+
+# Target Program
 TARGET = strace_0
 
-$(TARGET): strace_0.c
-	$(CC) $(CFLAGS) -o $(TARGET) strace_0.c
+# Source Files
+SRC = strace_0.cpp
 
+# Build Target
+$(TARGET): $(SRC)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SRC)
+
+# Clean Target
 clean:
 	rm -f $(TARGET)
+
+# Phony Targets
+.PHONY: clean
+
 
