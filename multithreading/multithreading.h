@@ -71,5 +71,6 @@ typedef struct blur_portion_s
 void *thread_entry(void *arg);
 void *_thread_entry(__attribute__((unused))void *arg);
 int tprintf(char const *format, ...);
+void blur_portion(blur_portion_t const *portion);
 
 #endif /* MULTITHREADING_H */
