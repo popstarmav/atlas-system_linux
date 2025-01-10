@@ -6,7 +6,7 @@ CXXFLAGS = -Wall -Werror -Wextra -pedantic
 TARGET = strace_0
 
 # Source Files
-SRC = strace_0.c
+SRC = strace_0.cpp
 
 # Build Target
 $(TARGET): $(SRC)
