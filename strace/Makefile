@@ -1,22 +1,14 @@
-# Compiler and Flags
 CXX = g++
-CXXFLAGS = -Wall -Werror -Wextra -pedantic
+CXXFLAGS = -Wall -Werror -Wextra -pedantic -std=c++11
 
-# Target Program
-TARGET = strace_0
+all: strace_0 strace_1
 
-# Source Files
-SRC = strace_0.cpp
+strace_0: strace_0.cpp
+	$(CXX) $(CXXFLAGS) -o strace_0 strace_0.cpp
 
-# Build Target
-$(TARGET): $(SRC)
-	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SRC)
+strace_1: strace_1.cpp
+	$(CXX) $(CXXFLAGS) -o strace_1 strace_1.cpp
 
-# Clean Target
 clean:
-	rm -f $(TARGET)
-
-# Phony Targets
-.PHONY: clean
-
+	rm -f strace_0 strace_1
 
