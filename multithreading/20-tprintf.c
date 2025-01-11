@@ -5,18 +5,22 @@
 /* Global mutex for thread safety */
 static pthread_mutex_t tprintf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/* Constructor function to initialize mutex */
+/**
+ * tprintf_init - Initialize mutex for thread-safe printing
+ */
 __attribute__((constructor))
 void tprintf_init(void)
 {
-    pthread_mutex_init(&tprintf_mutex, NULL);
+	pthread_mutex_init(&tprintf_mutex, NULL);
 }
 
-/* Destructor function to destroy mutex */
+/**
+ * tprintf_cleanup - Cleanup mutex after program completion
+ */
 __attribute__((destructor))
 void tprintf_cleanup(void)
 {
-    pthread_mutex_destroy(&tprintf_mutex);
+	pthread_mutex_destroy(&tprintf_mutex);
 }
 
 /**
@@ -26,18 +30,19 @@ void tprintf_cleanup(void)
  */
 int tprintf(char const *format, ...)
 {
-    va_list args;
-    int printed_chars;
+	va_list args;
+	int printed_chars;
 
-    pthread_mutex_lock(&tprintf_mutex);
-    
-    printed_chars = printf("[%lu] ", pthread_self());
-    
-    va_start(args, format);
-    printed_chars += vprintf(format, args);
-    va_end(args);
-    
-    pthread_mutex_unlock(&tprintf_mutex);
+	pthread_mutex_lock(&tprintf_mutex);
 
-    return printed_chars;
+	printed_chars = printf("[%lu] ", pthread_self());
+
+	va_start(args, format);
+	printed_chars += vprintf(format, args);
+	va_end(args);
+
+	pthread_mutex_unlock(&tprintf_mutex);
+
+	return (printed_chars);
 }
+
