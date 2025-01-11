@@ -1,6 +1,7 @@
 #ifndef MULTITHREADING_H
 #define MULTITHREADING_H
 
+#include "list.h"
 #include <stddef.h>
 #include <pthread.h>
 #include <stdint.h>
@@ -72,5 +73,6 @@ void *thread_entry(void *arg);
 void *_thread_entry(__attribute__((unused))void *arg);
 int tprintf(char const *format, ...);
 void blur_portion(blur_portion_t const *portion);
+list_t *prime_factors(char const *s);
 
 #endif /* MULTITHREADING_H */
