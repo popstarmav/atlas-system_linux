@@ -7,41 +7,63 @@
 #include <sys/user.h>
 #include <sys/reg.h>
 
-int main(int argc, char *argv[])
+int tracerLoop(pid_t child_pid)
 {
-    pid_t child;
     int status;
     struct user_regs_struct regs;
-    int in_syscall = 0;
+    int first_syscall = 1;
+    int syscall_return = 1;
 
-    if (argc < 2) {
-        return 1;
-    }
+    while (1)
+    {
+        if (wait(&status) == -1)
+            return (1);
+        if (WIFEXITED(status))
+            break;
 
-    child = fork();
-    if (child == 0) {
-        ptrace(PTRACE_TRACEME, 0, NULL, NULL);
-        execv(argv[1], argv + 1);
-    } else {
-        while (1) {
-            wait(&status);
-            if (WIFEXITED(status))
-                break;
-
-            if (!in_syscall) {
-                ptrace(PTRACE_GETREGS, child, NULL, &regs);
-                #ifdef __x86_64__
-                printf("%llu\n", (unsigned long long)regs.orig_rax);
-                #else
-                printf("%llu\n", (unsigned long long)regs.orig_eax);
-                #endif
+        if (!syscall_return || first_syscall)
+        {
+            if (ptrace(PTRACE_GETREGS, child_pid, NULL, &regs) == -1)
+                return (1);
+            if (first_syscall)
+            {
+                printf("59\n");
+                first_syscall = 0;
             }
-            in_syscall = !in_syscall;
-            
-            ptrace(PTRACE_SYSCALL, child, NULL, NULL);
+            else
+                printf("%lu\n", (unsigned long)regs.orig_rax);
         }
-    }
 
-    return 0;
+        if (ptrace(PTRACE_SYSCALL, child_pid, NULL, NULL) == -1)
+            return (1);
+
+        syscall_return = !syscall_return;
+    }
+    return (0);
 }
 
+int main(int argc, char *argv[], char *envp[])
+{
+    pid_t pid;
+
+    if (argc < 2 || !argv)
+    {
+        fprintf(stderr, "usage: %s <prog> <prog args>...\n", argv[0]);
+        return (1);
+    }
+
+    switch (pid = fork())
+    {
+        case -1:
+            return (1);
+        case 0:
+            if (ptrace(PTRACE_TRACEME, 0, NULL, NULL) == -1)
+                return (1);
+            if (execve(argv[1], argv + 1, envp) == -1)
+                return (1);
+        default:
+            break;
+    }
+
+    return (tracerLoop(pid));
+}

@@ -1,12 +1,10 @@
-CXX = g++
-CXXFLAGS = -Wall -Werror -Wextra -pedantic -std=c++11
+CC = gcc
+CFLAGS = -Wall -Werror -Wextra -pedantic
 
-all: strace_0
+strace_0: strace_0.c
+	$(CC) $(CFLAGS) -o strace_0 strace_0.c
 
-stracw_0: strace_0.c
-	$(CC) $(CFLAGS) strace_0.c -o strace_0
 clean:
 	rm -f strace_0
 
-.PHONY: all clean
 
