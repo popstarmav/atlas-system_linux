@@ -12,6 +12,7 @@ int main(int argc, char *argv[])
     pid_t child;
     int status;
     struct user_regs_struct regs;
+    int in_syscall = 0;
 
     if (argc < 2) {
         return 1;
@@ -26,15 +27,17 @@ int main(int argc, char *argv[])
             wait(&status);
             if (WIFEXITED(status))
                 break;
-            
-            ptrace(PTRACE_GETREGS, child, NULL, &regs);
-            
-            #ifdef __x86_64__
-            printf("%llu\n", (unsigned long long)regs.orig_rax);
-            #else
-            printf("%llu\n", (unsigned long long)regs.orig_eax);
-            #endif
 
+            if (!in_syscall) {
+                ptrace(PTRACE_GETREGS, child, NULL, &regs);
+                #ifdef __x86_64__
+                printf("%llu\n", (unsigned long long)regs.orig_rax);
+                #else
+                printf("%llu\n", (unsigned long long)regs.orig_eax);
+                #endif
+            }
+            in_syscall = !in_syscall;
+            
             ptrace(PTRACE_SYSCALL, child, NULL, NULL);
         }
     }
