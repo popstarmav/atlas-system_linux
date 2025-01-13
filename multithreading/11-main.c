@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include "blur_image.h"
 #include "multithreading.h"
 
 /**
