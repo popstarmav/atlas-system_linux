@@ -12,5 +12,8 @@ strace_1: strace_1.c
 strace_2: strace_2.c
 	$(CC) $(CFLAGS) strace_2.c -o strace_2
 
+strace_3:  strace_3.c
+	$(CC) $(CFLAGS) strace_3.c -o strace_3
+
 clean:
 	rm -f strace_0 strace_1
