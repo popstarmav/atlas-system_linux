@@ -1,15 +1,16 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -pedantic
-SRC = strace_0.c
-TARGET = strace_0
+CFLAGS = -Wall -Werror -Wextra -pedantic
 
-.PHONY: all clean
+all: strace_0 strace_1 strace_2
 
-all: $(TARGET)
+strace_0: strace_0.c
+	$(CC) $(CFLAGS) strace_0.c -o strace_0
 
-$(TARGET): $(SRC)
-	$(CC) $(CFLAGS) $(SRC) -o $(TARGET)
+strace_1: strace_1.c
+	$(CC) $(CFLAGS) strace_1.c -o strace_1
+
+strace_2: strace_2.c
+	$(CC) $(CFLAGS) strace_2.c -o strace_2
 
 clean:
-	rm -f $(TARGET)
-
+	rm -f strace_0 strace_1
