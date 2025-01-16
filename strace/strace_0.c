@@ -15,7 +15,7 @@ void child_process(char **argv, char **env) {
 void parent_process(pid_t child_pid) {
     int status;
     struct user_regs_struct regs;
-    int first_call = 1;
+    int in_syscall = 0;
     
     waitpid(child_pid, &status, 0);
     ptrace(PTRACE_SETOPTIONS, child_pid, 0, PTRACE_O_TRACESYSGOOD);
@@ -26,21 +26,12 @@ void parent_process(pid_t child_pid) {
         
         if (WIFEXITED(status))
             break;
-            
-        ptrace(PTRACE_GETREGS, child_pid, NULL, &regs);
-        
-        // Print syscall number only on entry
-        if (first_call) {
-            printf("/home/student_jail/student_repo/strace\n");
-            first_call = 0;
-        }
-        printf("%lld\n", (long long)regs.orig_rax);
 
-        ptrace(PTRACE_SYSCALL, child_pid, NULL, NULL);
-        waitpid(child_pid, &status, 0);
-        
-        if (WIFEXITED(status))
-            break;
+        if (!in_syscall) {
+            ptrace(PTRACE_GETREGS, child_pid, NULL, &regs);
+            printf("%lld\n", (long long)regs.orig_rax);
+        }
+        in_syscall = !in_syscall;
     }
 }
 
