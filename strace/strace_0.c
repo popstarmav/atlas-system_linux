@@ -3,47 +3,49 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/ptrace.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/user.h>
-#include <errno.h>
 
 void trace_syscalls(pid_t child_pid) {
     int status;
     struct user_regs_struct regs;
 
-    // Wait for the child to stop
     waitpid(child_pid, &status, 0);
+    ptrace(PTRACE_SETOPTIONS, child_pid, 0, PTRACE_O_TRACESYSGOOD);
 
     while (1) {
-        // Wait for syscall entry
         if (ptrace(PTRACE_SYSCALL, child_pid, NULL, NULL) == -1) {
             perror("ptrace");
             break;
         }
-        waitpid(child_pid, &status, 0);
-        if (WIFEXITED(status)) break;
-
-        // Get syscall number
-        if (ptrace(PTRACE_GETREGS, child_pid, NULL, &regs) == -1) {
-            perror("ptrace");
+        if (waitpid(child_pid, &status, 0) == -1) {
+            perror("waitpid");
             break;
         }
+        if (WIFEXITED(status))
+            break;
+
+        if (WIFSTOPPED(status) && WSTOPSIG(status) & 0x80) {
+            if (ptrace(PTRACE_GETREGS, child_pid, NULL, &regs) == -1) {
+                perror("ptrace");
+                break;
+            }
 #ifdef __x86_64__
-        printf("Syscall: %lld\n", regs.orig_rax); // x86-64: syscall number in orig_rax
-#elif __i386__
-        printf("Syscall: %ld\n", regs.orig_eax);  // x86: syscall number in orig_eax
+            printf("%lld\n", (long long)regs.orig_rax);
 #else
-#error "Unsupported architecture"
+            printf("%ld\n", (long)regs.orig_eax);
 #endif
-
-        // Wait for syscall exit
-        if (ptrace(PTRACE_SYSCALL, child_pid, NULL, NULL) == -1) {
-            perror("ptrace");
-            break;
+            if (ptrace(PTRACE_SYSCALL, child_pid, NULL, NULL) == -1) {
+                perror("ptrace");
+                break;
+            }
+            if (waitpid(child_pid, &status, 0) == -1) {
+                perror("waitpid");
+                break;
+            }
+            if (WIFEXITED(status))
+                break;
         }
-        waitpid(child_pid, &status, 0);
-        if (WIFEXITED(status)) break;
     }
 }
 
@@ -60,19 +62,12 @@ int main(int argc, char *argv[]) {
     }
 
     if (child_pid == 0) {
-        // Child process: trace me
-        if (ptrace(PTRACE_TRACEME, 0, NULL, NULL) == -1) {
-            perror("ptrace");
-            return EXIT_FAILURE;
-        }
-        // Replace the current process image with the given command
+        ptrace(PTRACE_TRACEME, 0, NULL, NULL);
         execvp(argv[1], &argv[1]);
         perror("execvp");
         return EXIT_FAILURE;
-    } else {
-        // Parent process: trace the child
-        trace_syscalls(child_pid);
     }
 
+    trace_syscalls(child_pid);
     return EXIT_SUCCESS;
 }
