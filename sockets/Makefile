@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -pedantic
+CFLAGS = -Wall -Wextra -Werror -pedantic -ststic
 
 odo_api_0: todo_api_0.c
 	$(CC) $(CFLAGS) -o todo_api_0 todo_api_0.c
