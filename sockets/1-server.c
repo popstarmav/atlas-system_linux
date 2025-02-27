@@ -47,7 +47,7 @@ int main(void)
 
 	if (client_fd < 0)
 	{
-		perror("Failed to accept connection");
+		perror("Failed");
 		exit(EXIT_FAILURE);
 	}
 
