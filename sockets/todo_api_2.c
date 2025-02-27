@@ -13,7 +13,7 @@ const char *response = "HTTP/1.1 200 OK\r\n\r\n";
 void parse_headers(char *request) {
     char *line = strtok(request, "\r\n");
     
-    // Skip the first line (request line)
+    // Skip request line
     line = strtok(NULL, "\r\n");
     
     while (line && *line) {
@@ -21,7 +21,7 @@ void parse_headers(char *request) {
         if (value) {
             *value = '\0';
             value++;
-            // Skip leading whitespace in value
+            // Skip leading whitespace
             while (*value == ' ') value++;
             printf("Header: \"%s\" -> \"%s\"\n", line, value);
         }
