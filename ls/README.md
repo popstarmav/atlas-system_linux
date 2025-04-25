@@ -1,59 +1,47 @@
-# Project Name
+# hls - Custom ls Implementation
 
 ## Overview
-A brief description of what this project does and its purpose.
+`hls` is a custom implementation of the Unix/Linux `ls` command that lists directory contents. This project demonstrates how to build a simplified version of this essential command-line utility while adding some custom functionality.
 
 ## Features
-- Feature 1
-- Feature 2
-- Feature 3
+- List files and directories in the current or specified location
+- Support for single-line directory listing with the `-1` option
+- Implements custom sorting functionality for directory contents
+- Clean and readable code structure with separate header file
 
-## Installation
-```bash
-# Installation commands here
-```
-
-## Usage
-```bash
-# Usage examples here
-```
-
-## Configuration
-Describe any configuration options here.
-
-## Contributing
-Guidelines for contributing to the project.
-
-## License
-Specify the license under which this project is available.
-```
-
-To update your README file, you can use the following command:
-
-```bash
-cat > README.md << 'EOF'
-# Project Name
-
-## Overview
-A brief description of what this project does and its purpose.
-
-## Features
-- Feature 1
-- Feature 2
-- Feature 3
-
-## Installation
-```
-# Installation commands here
-```
+## Files in this Repository
+- `hls.c` - Main implementation file
+- `hls.h` - Header file with function declarations and data structures
+- `test` - Test directory for verifying functionality
 
 ## Usage
 ```
-# Usage examples here
+./hls [options] [directory]
 ```
 
-## Configuration
-Describe any configuration options here.
+### Supported Options
+- `-1`: Display one file per line (single-line mode)
+- Additional sorting options as implemented in the code
 
-## Contributing
-Guidelines for contributing to the project.
+## Building the Project
+To compile the program:
+```
+gcc -o hls hls.c
+```
+
+## Implementation Details
+The implementation focuses on:
+- Proper directory traversal using system calls
+- Sorting directory entries according to specified criteria
+- Formatting output based on user options
+- Error handling for various edge cases
+
+## Recent Updates
+- Added sorting functionality for directory listings
+- Implemented the `-1` option for single-line directory listing
+- Improved code structure and documentation
+
+## Future Enhancements
+- Add support for more standard `ls` options
+- Implement colorized output
+- Add detailed file information display (similar to `ls -l`)
